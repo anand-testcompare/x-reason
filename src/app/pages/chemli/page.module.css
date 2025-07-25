@@ -5,6 +5,8 @@
   align-items: center;
   padding: 6rem;
   min-height: 100vh;
+  background-color: oklch(0.9774 0.0106 189.8282) !important;
+  color: oklch(0.2795 0.0368 260.0310) !important;
 }
 
 .description {

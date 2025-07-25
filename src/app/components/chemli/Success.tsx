@@ -1,6 +1,10 @@
-export default function Success() {
-    return (<div>
-        <h1>Process Complete</h1>
-        <p>TODO add logs</p>
+interface SuccessProps {
+    message?: string;
+}
+
+export default function Success({ message }: SuccessProps) {
+    return (<div className="space-y-4">
+        <h1 className="text-2xl font-bold text-primary">Process Complete</h1>
+        <p>{message || "TODO add logs"}</p>
     </div>)
 }

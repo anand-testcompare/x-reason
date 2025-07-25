@@ -1,9 +1,9 @@
 "use server";
 
 import OpenAI from "openai";
-import { AssistantCreateParams } from "openai/resources/beta/assistants/assistants.mjs";
+import { AssistantCreateParams } from "openai/resources/beta/assistants";
 
-type Tools = Array<AssistantCreateParams.AssistantToolsCode | AssistantCreateParams.AssistantToolsRetrieval | AssistantCreateParams.AssistantToolsFunction>;
+type Tools = AssistantCreateParams['tools'];
 
 let openai: OpenAI;
 
@@ -52,7 +52,7 @@ export async function sendMessage(thread: OpenAI.Beta.Threads.Thread, content: s
     instructions,
   });
 
-  let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+  let runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: thread.id });
 
   const maxAttempts = parseInt(process.env.MAX_ATTEMPTS || "100");
   let attempts = 0;
@@ -60,7 +60,7 @@ export async function sendMessage(thread: OpenAI.Beta.Threads.Thread, content: s
   while (runStatus.status !== "completed" && runStatus.status !== "failed" && attempts <= maxAttempts) {
     console.log(`attempts: ${attempts}`);
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+    runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: thread.id });
     console.log(`runStatus.status: ${runStatus.status}`);
     attempts++;
   }

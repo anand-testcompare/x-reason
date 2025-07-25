@@ -1,13 +1,15 @@
 import { useCallback, useState } from "react";
-import { Button, Radio, RadioGroup } from "@blueprintjs/core";
+import { Button } from "@/app/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/app/components/ui/radio-group";
+import { Label } from "@/app/components/ui/label";
 import { useReasonDemoDispatch, ReasonDemoActionTypes } from "@/app/context/ReasoningDemoContext";
 
 export default function SelectPlan() {
     const dispatch = useReasonDemoDispatch();
     const [selectedPlan, setSelectedPlan] = useState("Basic");
 
-    const onPlanChange = useCallback((e) => {
-        setSelectedPlan(e.currentTarget.value);
+    const onPlanChange = useCallback((value: string) => {
+        setSelectedPlan(value);
     }, []);
 
     const onNext = useCallback(() => {
@@ -26,18 +28,26 @@ export default function SelectPlan() {
     }, [dispatch, selectedPlan]);
 
     return (
-        <div>
-            <h1>Select Your Plan</h1>
-            <RadioGroup
-                label="Choose a plan"
-                onChange={onPlanChange}
-                selectedValue={selectedPlan}
-            >
-                <Radio label="Basic, free for a single user" value="Basic" />
-                <Radio label="Premium, up to 10 users $19.99/mo" value="Premium" />
-                <Radio label="Pro, unlimited users $100/mo" value="Pro" />
-            </RadioGroup>
-            <Button onClick={onNext} intent="primary">
+        <div className="space-y-4">
+            <h1 className="text-2xl font-bold">Select Your Plan</h1>
+            <div className="space-y-2">
+                <Label>Choose a plan</Label>
+                <RadioGroup value={selectedPlan} onValueChange={onPlanChange}>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Basic" id="r1" />
+                        <Label htmlFor="r1">Basic, free for a single user</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Premium" id="r2" />
+                        <Label htmlFor="r2">Premium, up to 10 users $19.99/mo</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Pro" id="r3" />
+                        <Label htmlFor="r3">Pro, unlimited users $100/mo</Label>
+                    </div>
+                </RadioGroup>
+            </div>
+            <Button onClick={onNext} variant="default">
                 Next
             </Button>
         </div>

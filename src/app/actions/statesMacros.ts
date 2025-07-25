@@ -1,6 +1,6 @@
 "use client"
 
-import { createMachine, MachineConfig, assign, StateNode, EventObject, DoneInvokeEvent } from 'xstate';
+import { createMachine, assign, EventObject } from 'xstate';
 
 export interface IContext {
   requestId: string;
@@ -14,7 +14,7 @@ export interface IEvent extends EventObject {
 }
 
 interface StateMachineConfig {
-  [key: string]: StateNode<IContext, any, IEvent>;
+  [key: string]: any;
 }
 
 // Define the type for the step functions
@@ -40,12 +40,11 @@ function statesMacro (stepsMap: Map<string, {id: string, func: StepFunction , ty
         },
         on: { 
           RESUME_EXECUTION: {
-            // @ts-ignore
             target: steps[index + 1]?.[1]?.id || 'success',
-            actions: assign<IContext, DoneInvokeEvent<IContext>>((context, event) => {
+            actions: assign((context: IContext, event: IEvent) => {
               return {
                 ...context,
-                ...event.data,
+                ...event,
               }
             })
           },
@@ -58,25 +57,26 @@ function statesMacro (stepsMap: Map<string, {id: string, func: StepFunction , ty
           type: 'async',
         },
         invoke: {
-          //@ts-ignore
           id: id,
-          src: (context: IContext, event: IEvent) => func(context),
+          src: async ({ context }: { context: IContext }) => {
+            return await func(context);
+          },
           onDone: {
             // target the next item in the array or success (final)
             target: steps[index + 1]?.[1]?.id || 'success',
-            actions: assign<IContext, DoneInvokeEvent<IContext>>((context, event) => {
+            actions: assign(({ context, event }: { context: IContext, event: IEvent }) => {
               return {
                 ...context,
-                ...event.data,
+                ...event.output,
               }
             }),
           },
           onError: {
             target: 'failure',
-            actions: assign<IContext, DoneInvokeEvent<IContext>>((context, event) => {
+            actions: assign(({ context, event }: { context: IContext, event: IEvent }) => {
               return {
                 ...context,
-                ...event.data,
+                error: event.error,
               }
             }),
           }
@@ -96,9 +96,8 @@ export function machineMacro(
 
   const initialKey = Object.keys(states)[0];
 
-  const machineConfig: MachineConfig<IContext, any, IEvent> = {
-    predictableActionArguments: true,
-    schema: {
+  const machine = createMachine({
+    types: {
       context: {} as IContext,
       events: {} as IEvent,
     },
@@ -116,11 +115,7 @@ export function machineMacro(
         type: 'final',
       },
     },
-  };
-
-  console.log(JSON.stringify(machineConfig))
-
-  const machine = createMachine(machineConfig);
+  });
 
   return machine;
 }

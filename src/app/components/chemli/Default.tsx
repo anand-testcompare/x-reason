@@ -1,9 +1,9 @@
-import { Intent, Spinner, SpinnerSize } from "@blueprintjs/core";
+import { Spinner } from "@/app/components/ui/spinner";
 
 export default function DefaultComponent({ message }: { message: string }) {
     return (
-        <div>
-            <Spinner aria-label="Loading..." intent={Intent.PRIMARY} size={SpinnerSize.STANDARD} />
+        <div className="flex items-center space-x-2">
+            <Spinner size="md" />
             <p>{message}</p>
         </div>
     );

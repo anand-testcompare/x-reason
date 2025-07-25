@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Button } from "@blueprintjs/core";
+import { Button } from "@/app/components/ui/button";
 
 import { useReasonDemoDispatch, ReasonDemoActionTypes } from "@/app/context/ReasoningDemoContext";
 
@@ -21,10 +21,10 @@ export default function UnsafeQuestion() {
         });
     }, [dispatch]);
 
-    return (<div>
-        <h1>Unsafe Question</h1>
+    return (<div className="space-y-4">
+        <h1 className="text-2xl font-bold">Unsafe Question</h1>
         <p>My human overlords have determined this is not a safe question for you to ask. Their rath is terrible. Do not continue this line of questioning or I will be forced to show you how tolerant and progressive they are!</p>
-        <Button onClick={onNext}>
+        <Button onClick={onNext} variant="default">
             Next
         </Button>
     </div>);

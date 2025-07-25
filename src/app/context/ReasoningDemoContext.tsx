@@ -29,7 +29,7 @@ const appInitialState: ReasonContextType = {
     callback: (event: MachineEvent) => console.log("default callback called"),
     states: [],
     factory: factory({
-        chemli: (context: Context) => {
+        chemli: (context: any) => {
             return {
                 programmer: chemliProgrammer,
                 solver: chemliSolver,
@@ -39,7 +39,7 @@ const appInitialState: ReasonContextType = {
                 getMetadata: chemliMetaData,
             };
         },
-        regie: (context: Context) => {
+        regie: (context: any) => {
             // TODO
             return {
                 programmer: regieProgrammer,
@@ -50,7 +50,7 @@ const appInitialState: ReasonContextType = {
                 getMetadata: regieMetaData,
             };
         },
-    }),
+    }) as any,
 }
 
 export enum ReasonDemoActionTypes {

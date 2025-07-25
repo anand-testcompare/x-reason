@@ -19,7 +19,7 @@ function getTransition(transition: { target: string; cond?: string; actions?: st
     return transitionConfig;
 }
 
-function generateStateConfig(state: StateConfig, functionCatalog: Map<string, Task>): Partial<StateNode<Context, any, MachineEvent>> {
+function generateStateConfig(state: StateConfig, functionCatalog: Map<string, Task>): any {
     if (state.type === "final") {
         return {
             type: state.type,
@@ -79,7 +79,7 @@ function generateStateConfig(state: StateConfig, functionCatalog: Map<string, Ta
 }
 
 function generateStateMachineConfig(statesArray: StateConfig[], functionCatalog: Map<string, Task>) {
-    let states: { [key: string]: Partial<StateNode<Context, any, MachineEvent>> } = {};
+    let states: { [key: string]: any } = {};
     statesArray.forEach((state) => {
         if (state.type === 'parallel') {
             const parallelStates = state.states?.reduce((prev, parallelState) => {
@@ -126,14 +126,14 @@ function generateStateMachineConfig(statesArray: StateConfig[], functionCatalog:
 }
 
 function program(statesArray: StateConfig[], functionCatalog: Map<string, Task>) {
-    return createMachine<Context, MachineEvent>(generateStateMachineConfig(statesArray, functionCatalog) as MachineConfig<Context, any, MachineEvent>, {
+    return createMachine(generateStateMachineConfig(statesArray, functionCatalog), {
         actions: {
             saveResult: assign((context, event) => {
                 // IMPORTANT: it's up to the caller to set status to -1 to trigger errors
                 // we can work on improving this in the future
                 return {
                     ...context,
-                    ...event.payload,
+                    ...(event && (event as any).payload ? (event as any).payload : {}),
                 };
             }),
         },

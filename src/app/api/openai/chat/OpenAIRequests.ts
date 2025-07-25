@@ -3,7 +3,7 @@
 import OpenAI from "openai";
 import { put } from "@vercel/blob";
 
-import { ChatCompletionCreateParamsBase } from "openai/resources/chat/completions.mjs";
+import { ChatCompletionCreateParamsBase } from "openai/resources/chat/completions";
 
 // https://www.npmjs.com/package/openai
 
@@ -28,14 +28,44 @@ async function storeImageBlob(key: string, blob: any) {
   return response.url;
 }
 
-export async function chatCompletion(params: ChatCompletionCreateParamsBase) {
+export async function chatCompletion(params: ChatCompletionCreateParamsBase, requestId?: string) {
   lazyOpenAIInit();
+  
+  console.log(`🔧 [OPENAI-INTERNAL] Starting completion with model: ${params.model} (Request ID: ${requestId || 'N/A'})`);
+  
   const completion = await openai.chat.completions.create({
     messages: params.messages,
     model: params.model,
     response_format: params.response_format || { type: 'text' },
   });
+  
+  console.log(`🔧 [OPENAI-INTERNAL] Completion successful, tokens used: ${completion.usage?.total_tokens || 'N/A'} (Request ID: ${requestId || 'N/A'})`);
+  
   return completion.choices[0].message.content;
+}
+
+export async function* chatCompletionStream(params: ChatCompletionCreateParamsBase, requestId?: string) {
+  lazyOpenAIInit();
+  
+  console.log(`🔧 [OPENAI-INTERNAL] Starting streaming completion with model: ${params.model} (Request ID: ${requestId || 'N/A'})`);
+  
+  const stream = await openai.chat.completions.create({
+    messages: params.messages,
+    model: params.model,
+    response_format: params.response_format || { type: 'text' },
+    stream: true,
+  });
+  
+  let totalTokens = 0;
+  for await (const chunk of stream) {
+    const content = chunk.choices[0]?.delta?.content;
+    if (content) {
+      yield content;
+    }
+    totalTokens += 1; // Approximate token counting
+  }
+  
+  console.log(`🔧 [OPENAI-INTERNAL] Streaming completion finished, approximate tokens: ${totalTokens} (Request ID: ${requestId || 'N/A'})`);
 }
 
 export async function generateEmbeddings(textArray: string[]) {
@@ -69,8 +99,8 @@ export async function getImage(prompt: string, recursionBackOff?: number) {
       n: 1,
       size: "512x512",
     });
-    console.log(`OpenAIRequests.ts: Requested image from dalle for ${prompt}, got ${response.data[0].url}`);
-    const dalleBlobUrl = response.data[0].url;
+    console.log(`OpenAIRequests.ts: Requested image from dalle for ${prompt}, got ${response.data?.[0]?.url}`);
+    const dalleBlobUrl = response.data?.[0]?.url;
 
     if (dalleBlobUrl) {
       const response = await fetch(dalleBlobUrl);
