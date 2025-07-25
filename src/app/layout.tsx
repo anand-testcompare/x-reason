@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Navigation } from './components/Navigation'
+import { Navigation, NavigationProvider, MainContent } from './components'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -9,9 +9,9 @@ export const metadata: Metadata = {
   title: 'X-Reason - AI-Driven State Machine Generation',
   description: 'Dynamic AI-generated software flows using XState state machines',
   icons: {
-    icon: '/icon_cherry_blossom.png',
-    shortcut: '/icon_cherry_blossom.png',
-    apple: '/icon_cherry_blossom.png',
+    icon: '/icon_cherry_blossom_small.png',
+    shortcut: '/icon_cherry_blossom_small.png',
+    apple: '/icon_cherry_blossom_small.png',
   },
 }
 
@@ -31,10 +31,12 @@ export default function RootLayout({
           padding: 0 
         }}
       >
-        <Navigation />
-        <main className="ml-64">
-          {children}
-        </main>
+        <NavigationProvider>
+          <Navigation />
+          <MainContent>
+            {children}
+          </MainContent>
+        </NavigationProvider>
       </body>
     </html>
   )
