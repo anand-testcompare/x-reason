@@ -1,4 +1,9 @@
-export * from './chemli/reasoning';
+export {
+    solver,
+    programmer,
+    evaluate,
+    aiTransition,
+} from './chemli/reasoning';
 export {
     solver as regieSolver,
     programmer as regieProgrammer,

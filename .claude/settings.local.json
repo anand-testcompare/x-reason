@@ -1,32 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git remote set-url:*)",
-      "Bash(npm install:*)",
-      "Bash(npm run build:*)",
-      "Bash(node:*)",
-      "Bash(rm:*)",
-      "WebFetch(domain:github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(npx shadcn@latest init:*)",
-      "Bash(npx tailwindcss:*)",
-      "Bash(npm test:*)",
-      "Bash(npm outdated)",
-      "Bash(pnpm dlx:*)",
-      "Bash(mv:*)",
-      "Bash(pnpm remove:*)",
-      "Bash(npx shadcn-ui:*)",
-      "Bash(npx shadcn:*)",
-      "Bash(pnpm add:*)",
-      "Bash(find:*)",
-      "Bash(true)",
-      "Bash(npm run lint)",
-      "mcp__ide__getDiagnostics",
-      "Bash(pnpm install:*)",
-      "Bash(mkdir:*)",
-      "Bash(ls:*)",
+      "Bash(git stash:*)",
+      "Bash(git pull:*)",
+      "Bash(git checkout:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npm run lint)",
+      "Bash(npm install:*)",
+      "Bash(grep:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm dev:*)"
     ],
     "deny": []
   }

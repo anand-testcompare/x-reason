@@ -207,7 +207,7 @@ export default function ReasonDemoStream() {
         if (component && context) {
             setComponentToRender(component(context));
         } else if (currentState && currentState === 'success') {
-            setComponentToRender(Success);
+            setComponentToRender(<Success message="Process completed successfully!" />);
         }
     }, [currentState, context, functions, setComponentToRender]);
 
@@ -296,6 +296,20 @@ export default function ReasonDemoStream() {
             <StateMachineVisualizer 
                 machine={states ? { id: 'reasoning-machine', config: { states } } : null}
                 interpreter={null}
+                stepsMap={states ? (() => {
+                    // Convert states object to stepsMap format
+                    const stepsMap = new Map();
+                    Object.entries(states || {}).forEach(([key, value]: [string, any]) => {
+                        if (key !== 'success' && key !== 'failure') {
+                            stepsMap.set(key, {
+                                id: key,
+                                func: () => Promise.resolve(), // Placeholder function
+                                type: value?.meta?.type || 'async'
+                            });
+                        }
+                    });
+                    return stepsMap;
+                })() : undefined}
             />
         </Interpreter>
     );

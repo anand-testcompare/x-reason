@@ -1,17 +1,12 @@
-"use client"
+"use client";
 
-import React from 'react';
-import { ReasonDemoProvider, EngineTypes } from '../../context/ReasoningDemoContext';
-import { RegieDemo } from '../../components/regie/RegieDemo';
+import { RegieDemo } from "@/app/components";
+import { ReasonDemoProvider } from "@/app/context/ReasoningDemoContext";
 
 export default function RegiePage() {
   return (
-    <ReasonDemoProvider engineType={EngineTypes.REGIE}>
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <RegieDemo />
-        </div>
-      </div>
+    <ReasonDemoProvider>
+      <RegieDemo />
     </ReasonDemoProvider>
   );
 }
