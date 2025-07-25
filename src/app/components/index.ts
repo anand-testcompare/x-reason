@@ -3,3 +3,6 @@ export { default as Success } from "./Success";
 export { default as LocalStorage } from "./storage/LocalStorage";
 export { Navigation } from "./Navigation";
 export { ReasonDemo } from "./chemli/ReasonDemo";
+export { RegieDemo } from "./regie/RegieDemo";
+export { MainContent } from "./MainContent";
+export { NavigationProvider } from "./NavigationWrapper";

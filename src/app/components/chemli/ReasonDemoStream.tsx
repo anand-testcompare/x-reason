@@ -207,7 +207,7 @@ export default function ReasonDemoStream() {
         if (component && context) {
             setComponentToRender(component(context));
         } else if (currentState && currentState === 'success') {
-            setComponentToRender(Success);
+            setComponentToRender(<Success message="Process completed successfully!" />);
         }
     }, [currentState, context, functions, setComponentToRender]);
 
