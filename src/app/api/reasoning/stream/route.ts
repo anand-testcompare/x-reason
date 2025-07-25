@@ -1,10 +1,8 @@
 import { NextRequest } from 'next/server';
-import engine from '../engine.v1';
-import { solver as chemliSolver, programmer as chemliProgrammer } from '../prompts/chemli/reasoning';
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, type = 'solve' } = await request.json();
+    const { query, provider = 'gemini' } = await request.json();
     
     if (!query) {
       return new Response('Query is required', { status: 400 });
@@ -14,19 +12,42 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          if (type === 'solve') {
-            // Stream solver results
-            for await (const chunk of engine.solver.solveStream!(query, chemliSolver)) {
-              const data = JSON.stringify(chunk) + '\n';
-              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+          // Use the AI chat API for streaming instead of the hardcoded engine
+          const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ai/chat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: [{ role: 'user', content: query }],
+              provider: provider,
+              stream: true
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`AI API error: ${response.status}`);
+          }
+
+          // Stream the AI response
+          const reader = response.body?.getReader();
+          const decoder = new TextDecoder();
+          
+          if (reader) {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              
+              const chunk = decoder.decode(value);
+              // Stream each chunk as content
+              if (chunk.trim()) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`));
+              }
             }
-          } else if (type === 'program') {
-            // Stream programmer results - need function catalog
-            const functionCatalog = 'placeholder_catalog'; // You would get this from your actual catalog
-            for await (const chunk of engine.programmer.programStream!(query, functionCatalog, chemliProgrammer)) {
-              const data = JSON.stringify(chunk) + '\n';
-              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-            }
+          } else {
+            // Fallback to non-streaming response
+            const result = await response.text();
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'content', content: result })}\n\n`));
           }
           
           // Send completion marker

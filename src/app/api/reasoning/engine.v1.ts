@@ -29,9 +29,6 @@ async function solve(query: string, solver: Prompt): Promise<string> {
 }
 
 async function* solveStream(query: string, solver: Prompt, onProgress?: (stage: string) => void): AsyncGenerator<{type: 'progress' | 'content', data: string}, string> {
-    onProgress?.('Analyzing query...');
-    yield { type: 'progress', data: 'Analyzing query...' };
-    
     const { user, system } = await solver(query);
     
     onProgress?.('Generating solution...');

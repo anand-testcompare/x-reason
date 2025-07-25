@@ -120,3 +120,113 @@ export function machineMacro(
   return machine;
 }
 
+// Generate XState machine code as string for Stately Viz compatibility
+export function generateXStateMachineCode(
+  stepsMap: Map<string, {id: string, func: StepFunction, type?: 'pause' | 'async'}>,
+  machineId: string = 'generatedMachine'
+): string {
+  const steps = Array.from(stepsMap.entries());
+  const initialKey = steps[0]?.[1]?.id || 'success';
+  
+  let statesCode = '';
+  
+  steps.forEach((value, index) => {
+    const {id, func, type} = value[1];
+    const nextState = steps[index + 1]?.[1]?.id || 'success';
+    
+    if (type && type === 'pause') {
+      statesCode += `    ${id}: {
+      meta: { type: 'pause' },
+      on: { 
+        RESUME_EXECUTION: {
+          target: '${nextState}',
+          actions: assign((context, event) => ({
+            ...context,
+            ...event,
+          }))
+        },
+      },
+    },
+`;
+    } else {
+      statesCode += `    ${id}: {
+      meta: { type: 'async' },
+      invoke: {
+        id: '${id}',
+        src: 'step_${id}',
+        onDone: {
+          target: '${nextState}',
+          actions: assign(({ context, event }) => ({
+            ...context,
+            ...event.data,
+          })),
+        },
+        onError: {
+          target: 'failure',
+          actions: assign(({ context, event }) => ({
+            ...context,
+            error: event.data,
+          })),
+        }
+      }
+    },
+`;
+    }
+  });
+
+  const machineCode = `import { createMachine, assign } from 'xstate';
+
+const ${machineId} = createMachine({
+  id: '${machineId}',
+  initial: '${initialKey}',
+  context: {
+    requestId: "",
+    status: 0,
+  },
+  states: {
+${statesCode}    success: {
+      type: 'final',
+    },
+    failure: {
+      type: 'final',
+    },
+  },
+});
+
+export default ${machineId};`;
+
+  return machineCode;
+}
+
+// Generate a URL for Stately Viz with the machine code
+export function generateStatelyVizUrl(
+  stepsMap: Map<string, {id: string, func: StepFunction, type?: 'pause' | 'async'}>,
+  machineId: string = 'generatedMachine'
+): string {
+  const machineCode = generateXStateMachineCode(stepsMap, machineId);
+  
+  // Create a simple config object that Stately Viz can understand
+  const config = {
+    id: machineId,
+    initial: Array.from(stepsMap.keys())[0] || 'start',
+    states: {}
+  };
+  
+  // Build states from stepsMap
+  const steps = Array.from(stepsMap.entries());
+  steps.forEach(([key, value], index) => {
+    const nextState = steps[index + 1]?.[0] || 'success';
+    config.states[key] = {
+      on: {
+        CONTINUE: nextState
+      }
+    };
+  });
+  
+  config.states['success'] = { type: 'final' };
+  config.states['failure'] = { type: 'final' };
+  
+  const encodedConfig = encodeURIComponent(JSON.stringify(config));
+  return `https://stately.ai/viz?machine=${encodedConfig}`;
+}
+

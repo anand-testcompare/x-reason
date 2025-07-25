@@ -11,6 +11,7 @@ import { StateMachineVisualizer } from "@/app/components/StateMachineVisualizer"
 import { LocalStorage } from "@/app/components";
 import { AIConfig } from "@/app/api/ai/providers";
 import { Copy, ChevronDown, ChevronRight, Check, ArrowUp } from 'lucide-react';
+import React from "react"; // Added missing import for React
 
 // Shared UI Components
 export const LoadingSpinner = () => (
@@ -56,49 +57,88 @@ export const JsonHighlighter = ({ json, className = "" }: { json: string; classN
     );
 };
 
-export const SampleQueries = ({ samples, onSelect, disabled }: { 
+export const SampleQueries = ({ samples, onSelect, disabled, isExpanded }: { 
     samples: string[], 
     onSelect: (sample: string) => void,
-    disabled?: boolean 
-}) => (
-    <TooltipProvider>
-        <div className="w-full">
-            <p className="text-xs text-muted-foreground mb-3">
-                Sample Requests (click to use):
-            </p>
-            <div className="flex flex-wrap gap-1 mb-3 overflow-hidden">
-                {samples.map((sample, index) => {
-                    const isLong = sample.length > 50;
-                    const displayText = isLong ? `${sample.substring(0, 50)}...` : sample;
-                    
-                    const buttonElement = (
-                        <Button
-                            key={index}
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onSelect(sample)}
-                            disabled={disabled}
-                            className="text-xs h-7 px-2 max-w-[calc(100%-0.25rem)] flex-shrink min-w-0 break-words"
-                        >
-                            <span className="truncate block w-full text-left">{displayText}</span>
-                        </Button>
-                    );
+    disabled?: boolean,
+    isExpanded?: boolean
+}) => {
+    // Start with a default length that works for SSR
+    const defaultLength = isExpanded ? 120 : 50;
+    const [truncationLength, setTruncationLength] = React.useState(defaultLength);
+    const [isHydrated, setIsHydrated] = React.useState(false);
 
-                    return isLong ? (
-                        <Tooltip key={index} delayDuration={300}>
-                            <TooltipTrigger asChild>
-                                {buttonElement}
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs z-50">
-                                <p className="text-sm break-words">{sample}</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    ) : buttonElement;
-                })}
+    // Dynamic truncation based on screen size and expanded state
+    const getTruncationLength = React.useCallback(() => {
+        if (typeof window === 'undefined') return defaultLength; // SSR fallback
+        
+        const width = window.innerWidth;
+        const baseLength = isExpanded ? 120 : 50; // Much longer in expanded view
+        
+        // Responsive truncation lengths
+        if (width >= 1536) return Math.max(baseLength + 40, 80); // 2xl screens
+        if (width >= 1280) return Math.max(baseLength + 30, 70); // xl screens  
+        if (width >= 1024) return Math.max(baseLength + 20, 60); // lg screens
+        if (width >= 768) return Math.max(baseLength + 10, 55);  // md screens
+        return baseLength; // sm screens and below
+    }, [isExpanded, defaultLength]);
+
+    // Only update truncation after hydration to avoid SSR mismatch
+    React.useEffect(() => {
+        setIsHydrated(true);
+        setTruncationLength(getTruncationLength());
+    }, [getTruncationLength]);
+
+    // Update truncation length on window resize and expanded state changes
+    React.useEffect(() => {
+        if (!isHydrated) return;
+        
+        const handleResize = () => setTruncationLength(getTruncationLength());
+        window.addEventListener('resize', handleResize);
+        setTruncationLength(getTruncationLength());
+        return () => window.removeEventListener('resize', handleResize);
+    }, [isExpanded, getTruncationLength, isHydrated]);
+
+    return (
+        <TooltipProvider>
+            <div className="w-full">
+                <p className="text-xs text-muted-foreground mb-3">
+                    Sample Requests (click to use):
+                </p>
+                <div className="flex flex-wrap gap-1 mb-3 overflow-hidden">
+                    {samples.map((sample, index) => {
+                        const isLong = sample.length > truncationLength;
+                        const displayText = isLong ? `${sample.substring(0, truncationLength)}...` : sample;
+                        
+                        const buttonElement = (
+                            <Button
+                                key={index}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onSelect(sample)}
+                                disabled={disabled}
+                                className="text-xs h-7 px-2 max-w-[calc(100%-0.25rem)] flex-shrink min-w-0 break-words"
+                            >
+                                <span className="truncate block w-full text-left">{displayText}</span>
+                            </Button>
+                        );
+
+                        return isLong ? (
+                            <Tooltip key={index} delayDuration={300}>
+                                <TooltipTrigger asChild>
+                                    {buttonElement}
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs z-50">
+                                    <p className="text-sm break-words">{sample}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        ) : buttonElement;
+                    })}
+                </div>
             </div>
-        </div>
-    </TooltipProvider>
-);
+        </TooltipProvider>
+    );
+};
 
 // Configuration Interface
 export interface AgentConfig {
@@ -182,6 +222,7 @@ export function AgentDemoTemplate({ config, hookReturn, inputRef, stateRef }: Ag
                         samples={config.sampleQueries}
                         onSelect={fillSampleQuery}
                         disabled={isLoading}
+                        isExpanded={isExpanded}
                     />
                 )}
 
@@ -380,6 +421,20 @@ export function AgentDemoTemplate({ config, hookReturn, inputRef, stateRef }: Ag
                     <StateMachineVisualizer 
                         machine={states ? { id: `${config.name.toLowerCase()}-machine`, config: { states } } : null}
                         interpreter={null}
+                        stepsMap={states ? (() => {
+                            // Convert states object to stepsMap format
+                            const stepsMap = new Map();
+                            Object.entries(states || {}).forEach(([key, value]: [string, any]) => {
+                                if (key !== 'success' && key !== 'failure') {
+                                    stepsMap.set(key, {
+                                        id: key,
+                                        func: () => Promise.resolve(), // Placeholder function
+                                        type: value?.meta?.type || 'async'
+                                    });
+                                }
+                            });
+                            return stepsMap;
+                        })() : undefined}
                     />
                 </div>
             </Interpreter>

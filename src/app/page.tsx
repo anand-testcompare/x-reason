@@ -1,6 +1,7 @@
 "use client"
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
@@ -16,15 +17,31 @@ export default function Home() {
       {/* Header */}
       <div className="container mx-auto px-4 pt-8 pb-4">
         <div className="max-w-4xl mx-auto">
-          <Badge variant="secondary" className="mb-4">
-            Dynamic State Machine Generation
-          </Badge>
-          <h1 className="text-4xl font-bold mb-4">
-            X-Reason
-          </h1>
-          <p className="text-xl text-muted-foreground mb-8">
+          {/* Cherry Blossom Icon */}
+          <div className="flex justify-center mb-6">
+            <Image 
+              src="/icon_cherry_blossom.png" 
+              alt="X-Reason" 
+              width={400} 
+              height={400} 
+              priority
+              className="object-contain"
+              style={{ width: "auto", height: "400px" }}
+            />
+          </div>
+          
+          <p className="text-base text-muted-foreground italic text-center mb-6">
             Convert natural language problem descriptions into executable XState machines with AI-driven task decomposition
           </p>
+          
+          {/* Feature Badges */}
+          <div className="flex flex-wrap justify-center gap-2 mb-8">
+            <Badge variant="secondary">Dynamic State Machine Generation</Badge>
+            <Badge variant="secondary">Natural Language Input</Badge>
+            <Badge variant="secondary">Task Decomposition</Badge>
+            <Badge variant="secondary">XState Generation</Badge>
+            <Badge variant="secondary">Visual Debugging</Badge>
+          </div>
         </div>
       </div>
 
@@ -40,13 +57,6 @@ export default function Home() {
                   X-Reason transforms natural language problem descriptions into executable XState machines through AI-powered task decomposition. 
                   Simply describe what you want to build, and the system generates a complete state machine with error handling, transitions, and context management.
                 </p>
-                
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">Natural Language Input</Badge>
-                  <Badge variant="secondary">Task Decomposition</Badge>
-                  <Badge variant="secondary">XState Generation</Badge>
-                  <Badge variant="secondary">Visual Debugging</Badge>
-                </div>
 
                 <Button 
                   variant="outline" 

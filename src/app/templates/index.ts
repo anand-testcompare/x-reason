@@ -8,6 +8,7 @@ export {
     type AgentDemoHookReturn,
     type AgentDemoTemplateProps
 } from './AgentDemoTemplate';
+export { MultiStepAgentDemoTemplate } from './MultiStepAgentDemoTemplate';
 export { 
     useAgentDemo,
     type AgentSubmissionLogic,

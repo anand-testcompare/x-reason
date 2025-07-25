@@ -296,6 +296,20 @@ export default function ReasonDemoStream() {
             <StateMachineVisualizer 
                 machine={states ? { id: 'reasoning-machine', config: { states } } : null}
                 interpreter={null}
+                stepsMap={states ? (() => {
+                    // Convert states object to stepsMap format
+                    const stepsMap = new Map();
+                    Object.entries(states || {}).forEach(([key, value]: [string, any]) => {
+                        if (key !== 'success' && key !== 'failure') {
+                            stepsMap.set(key, {
+                                id: key,
+                                func: () => Promise.resolve(), // Placeholder function
+                                type: value?.meta?.type || 'async'
+                            });
+                        }
+                    });
+                    return stepsMap;
+                })() : undefined}
             />
         </Interpreter>
     );

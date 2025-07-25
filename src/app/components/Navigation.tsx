@@ -55,26 +55,25 @@ export function Navigation() {
             <Link 
               href="/" 
               className="flex items-center justify-center hover:opacity-80 transition-opacity"
-              onClick={() => setIsMobileOpen(false)}
             >
                              {isCollapsed ? (
                  <div 
-                   className="hidden lg:block w-8 h-8 flex items-center justify-center"
+                   className="hidden lg:block w-16 h-16 flex items-center justify-center"
                  >
                    <Image 
                      src="/icon_cherry_blossom_small.png" 
                      alt="X-Reason" 
-                     width={28} 
-                     height={28} 
+                     width={60} 
+                     height={60} 
                      className="object-contain"
                    />
                  </div>
                ) : (
                 <Image 
-                  src="/icon_cherry_blossom.png" 
+                  src="/icon_cherry_blossom_small.png" 
                   alt="X-Reason" 
-                  width={180} 
-                  height={60} 
+                  width={120} 
+                  height={120} 
                   priority
                   className="object-contain"
                 />

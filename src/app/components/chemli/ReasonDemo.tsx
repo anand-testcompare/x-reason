@@ -5,7 +5,7 @@ import { EngineTypes } from "@/app/context/ReasoningDemoContext";
 import { DefaultComponent, Success } from ".";
 import { Error } from "@/app/components";
 import { 
-    AgentDemoTemplate, 
+    MultiStepAgentDemoTemplate, 
     AgentConfig,
     useAgentDemo,
     AgentSubmissionLogic 
@@ -21,6 +21,17 @@ const chemliSubmissionLogic: AgentSubmissionLogic = async ({
     dispatch,
     setComponentToRender
 }) => {
+    // Check if required dependencies are available
+    if (!solver) {
+        setComponentToRender(<Error message="Solver not initialized. Please refresh the page." />);
+        return;
+    }
+    
+    if (!programmer) {
+        setComponentToRender(<Error message="Programmer not initialized. Please refresh the page." />);
+        return;
+    }
+
     // Step 1: Get task list from AI solver
     setComponentToRender(<DefaultComponent message="Analyzing your product development requirements..." />);
     const solverResult = await reasoningEngine.solver.solve(userQuery, solver);
@@ -107,7 +118,7 @@ export default function ReasonDemo() {
     });
 
     return (
-        <AgentDemoTemplate 
+        <MultiStepAgentDemoTemplate 
             config={chemliConfig}
             hookReturn={hookReturn}
             inputRef={inputRef}

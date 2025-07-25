@@ -5,7 +5,7 @@ import { EngineTypes, ReasonDemoActionTypes } from "@/app/context/ReasoningDemoC
 import { DefaultComponent, Success } from "@/app/components/chemli";
 import { Error } from "@/app/components";
 import { 
-    AgentDemoTemplate, 
+    MultiStepAgentDemoTemplate, 
     AgentConfig,
     useAgentDemo,
     AgentSubmissionLogic 
@@ -106,7 +106,7 @@ export function RegieDemo() {
     });
 
     return (
-        <AgentDemoTemplate 
+        <MultiStepAgentDemoTemplate 
             config={regieConfig}
             hookReturn={hookReturn}
             inputRef={inputRef}

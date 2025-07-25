@@ -28,7 +28,10 @@ export type ReasonContextType = {
 const appInitialState: ReasonContextType = {
     callback: (event: MachineEvent) => console.log("default callback called"),
     states: [],
-    context: {},  // Add missing context field
+    context: {
+        requestId: "",
+        status: 0
+    },
     factory: factory({
         chemli: (context: any) => {
             return {
