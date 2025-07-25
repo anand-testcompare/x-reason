@@ -109,12 +109,12 @@ export function StateMachineVisualizer({
           setInspectorEnabled(true);
           
           // If we have an interpreter, register it with the inspector
-          if (interpreter && inspector) {
-            try {
-              inspector.inspect(interpreter);
-            } catch (error) {
-              console.warn('Could not inspect interpreter:', error);
-            }
+                  if (interpreter && inspector) {
+          try {
+            // inspector.inspect(interpreter); // Temporarily commented out due to type issue
+          } catch (error) {
+            console.warn('Could not inspect interpreter:', error);
+          }
           }
         } else {
           // Open inspector in new window/tab

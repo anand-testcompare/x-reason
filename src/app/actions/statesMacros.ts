@@ -64,19 +64,19 @@ function statesMacro (stepsMap: Map<string, {id: string, func: StepFunction , ty
           onDone: {
             // target the next item in the array or success (final)
             target: steps[index + 1]?.[1]?.id || 'success',
-            actions: assign(({ context, event }: { context: IContext, event: IEvent }) => {
+            actions: assign(({ context, event }: { context: IContext, event: any }) => {
               return {
                 ...context,
-                ...event.output,
+                ...event.data,
               }
             }),
           },
           onError: {
             target: 'failure',
-            actions: assign(({ context, event }: { context: IContext, event: IEvent }) => {
+            actions: assign(({ context, event }: { context: IContext, event: any }) => {
               return {
                 ...context,
-                error: event.error,
+                error: event.data,
               }
             }),
           }

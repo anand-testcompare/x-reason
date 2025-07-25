@@ -1,7 +1,7 @@
 import { AcceptTOS, AgeConfirmation, PartnerPlugins, RegisterUser, SelectPlan, SpecialOffers } from "@/app/components/regie";
 import { Context, MachineEvent, Task, engineV1 as engine } from "@/app/api/reasoning";
 import { ActionType } from "@/app/utils";
-import { regieProgrammer, regieSolver, regieEvaluate } from "@/app/api/reasoning/prompts/";
+import { regieProgrammer, regieSolver, regieEvaluate } from "@/app/api/reasoning/prompts";
 import { UnsafeQuestion, UnsupportedQuestion } from "@/app/components/chemli";
 
 function getFunctionCatalog(dispatch: (action: ActionType) => void) {

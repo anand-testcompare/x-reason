@@ -41,13 +41,12 @@ export function AIProviderSelector({ config, onChange, className }: AIProviderSe
   const currentValue = `${config.provider}:${currentModel}`;
 
   return (
-    <div className={`space-y-2 ${className || ''}`}>
-      <Label htmlFor="model-select">AI Model</Label>
+    <div className={className || ''}>
       <Select 
         value={currentValue} 
         onValueChange={handleModelChange}
       >
-        <SelectTrigger id="model-select">
+        <SelectTrigger id="model-select" className="h-7 text-xs">
           <SelectValue placeholder="Select AI Model" />
         </SelectTrigger>
         <SelectContent style={selectContentStyle}>
