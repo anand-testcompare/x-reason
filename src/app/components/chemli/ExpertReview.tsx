@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { Button } from "@blueprintjs/core";
+import { Button } from "@/app/components/ui/button";
 
 import { useReasonDemoStore, useReasonDemoDispatch, ReasonDemoActionTypes } from "@/app/context/ReasoningDemoContext";
 import { FormulaTable } from ".";
@@ -83,8 +83,8 @@ export default function ExpertReview() {
         metadata: {},
     };
 
-    return (<div>
-        <h1>Chemical Engineer Review</h1>
+    return (<div className="space-y-4">
+        <h1 className="text-2xl font-bold">Chemical Engineer Review</h1>
         <p>Please review the formula, make edits as required, and submit for lab testing. IMPORTANT: This is a notional example!</p>
         <div className="formula-container">
             <FormulaTable table={formula} className="formula-table" />
@@ -92,7 +92,7 @@ export default function ExpertReview() {
         <p>
             Using the recalled solution will trigger a different path.
         </p>
-        <Button onClick={() => onNext(sampleRecalledSolution)}>
+        <Button onClick={() => onNext(sampleRecalledSolution)} variant="default">
             Submit
         </Button>
     </div>)

@@ -18,23 +18,25 @@ export type Transition = Map<"CONTINUE" | "ERROR", (context: Context, event: Mac
 export type Task = {
   description: string;
   implementation: (context: Context, event?: MachineEvent) => void;
-  component?: (context: Context, event?: MachineEvent) => JSX.Element;
+  component?: (context: Context, event?: MachineEvent) => React.JSX.Element;
   transitions?: Transition;
 };
 
 export interface StateMachineConfig {
-  [key: string]: StateNode<Context, any, MachineEvent>;
+  [key: string]: any;
 }
 
 export type Solver = {
   // generates the instructions for solving the query
   solve(query: string, solver: Prompt): Promise<string>;
+  solveStream?(query: string, solver: Prompt, onProgress?: (stage: string) => void): AsyncGenerator<{type: 'progress' | 'content', data: string}, string>;
 };
 
 export type Programer = {
   // the input is the result of Solver.solve
   // generates the state machine config used by the interpreter
   program(query: string, functionCatalog: string, programmer: Prompt): Promise<StateConfig[]>;
+  programStream?(query: string, functionCatalog: string, programmer: Prompt, onProgress?: (stage: string) => void): AsyncGenerator<{type: 'progress' | 'content', data: string}, StateConfig[]>;
 };
 
 export type EvaluationInput = {

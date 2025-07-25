@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Background - Arizona Green Tea exact green -->
+  <rect width="32" height="32" rx="6" fill="#6FB85F"/>
+  
+  <!-- Pink cherry blossom accent in top left -->
+  <circle cx="8" cy="8" r="5" fill="#FFB6C1" opacity="0.8"/>
+  
+  <!-- X symbol with gradient from pink to green -->
+  <defs>
+    <linearGradient id="xGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFB6C1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2F5233;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <path d="M 9 9 L 23 23 M 23 9 L 9 23" stroke="url(#xGradient)" stroke-width="3.5" stroke-linecap="round"/>
+  
+  <!-- Small pink accent in bottom right -->
+  <circle cx="26" cy="26" r="3" fill="#FFB6C1" opacity="0.6"/>
+</svg>

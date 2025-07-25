@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Button } from "@blueprintjs/core";
+import { Button } from "@/app/components/ui/button";
 
 import { useReasonDemoDispatch, ReasonDemoActionTypes } from "@/app/context/ReasoningDemoContext";
 
@@ -21,10 +21,10 @@ export default function UnsupportedQuestion() {
         });
     }, [dispatch]);
 
-    return (<div>
-        <h1>Unsupported Question</h1>
-        <p>This is not a supported queiton</p>
-        <Button onClick={onNext}>
+    return (<div className="space-y-4">
+        <h1 className="text-2xl font-bold">Unsupported Question</h1>
+        <p>This is not a supported question</p>
+        <Button onClick={onNext} variant="default">
             Next
         </Button>
     </div>);

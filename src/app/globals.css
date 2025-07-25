@@ -1,4 +1,369 @@
-@import "@blueprintjs/core/lib/css/blueprint.css";
-@import "@blueprintjs/icons/lib/css/blueprint-icons.css";
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind base;
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind components;
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind utilities;
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=fallback");
+
+@layer base {
+  :root {
+    --background: oklch(1.0000 0 0);
+    --foreground: oklch(0.2795 0.0368 260.0310);
+    --card: oklch(0.9774 0.0106 189.8282);
+    --card-foreground: oklch(0.2795 0.0368 260.0310);
+    --popover: oklch(0.9774 0.0106 189.8282);
+    --popover-foreground: oklch(0.2795 0.0368 260.0310);
+    --primary: oklch(0.7124 0.0977 186.6761);
+    --primary-foreground: oklch(1.0000 0 0);
+    --secondary: oklch(0.7657 0.1276 358.9636);
+    --secondary-foreground: oklch(0.2795 0.0368 260.0310);
+    --muted: oklch(0.9476 0.0190 192.8095);
+    --muted-foreground: oklch(0.5544 0.0407 257.4166);
+    --accent: oklch(0.9476 0.0190 192.8095);
+    --accent-foreground: oklch(0.2795 0.0368 260.0310);
+    --destructive: oklch(0.7676 0.1739 23.4117);
+    --destructive-foreground: oklch(1.0000 0 0);
+    --border: oklch(0.8708 0.0470 189.6325);
+    --input: oklch(0.8708 0.0470 189.6325);
+    --ring: oklch(0.7124 0.0977 186.6761);
+    --chart-1: oklch(0.6324 0.1414 23.2506);
+    --chart-2: oklch(0.7124 0.0977 186.6761);
+    --chart-3: oklch(0.5544 0.0407 257.4166);
+    --chart-4: oklch(0.7676 0.1739 23.4117);
+    --chart-5: oklch(0.7657 0.1276 358.9636);
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: oklch(0.1412 0.0105 196.3762);
+    --foreground: oklch(0.9288 0.0126 255.5078);
+    --card: oklch(0.2575 0.0166 196.1661);
+    --card-foreground: oklch(0.9288 0.0126 255.5078);
+    --popover: oklch(0.2575 0.0166 196.1661);
+    --popover-foreground: oklch(0.9288 0.0126 255.5078);
+    --primary: oklch(0.7124 0.0977 186.6761);
+    --primary-foreground: oklch(1.0000 0 0);
+    --secondary: oklch(0.3430 0.0196 196.2761);
+    --secondary-foreground: oklch(0.9288 0.0126 255.5078);
+    --muted: oklch(0.3430 0.0196 196.2761);
+    --muted-foreground: oklch(0.6779 0.0448 255.6928);
+    --accent: oklch(0.3430 0.0196 196.2761);
+    --accent-foreground: oklch(0.9288 0.0126 255.5078);
+    --destructive: oklch(0.7137 0.1648 23.4089);
+    --destructive-foreground: oklch(1.0000 0 0);
+    --border: oklch(0.3430 0.0196 196.2761);
+    --input: oklch(0.3430 0.0196 196.2761);
+    --ring: oklch(0.7124 0.0977 186.6761);
+    --chart-1: oklch(0.6324 0.1414 23.2506);
+    --chart-2: oklch(0.7124 0.0977 186.6761);
+    --chart-3: oklch(0.5544 0.0407 257.4166);
+    --chart-4: oklch(0.7676 0.1739 23.4117);
+    --chart-5: oklch(0.7657 0.1276 358.9636);
+    --radius: 0.75rem;
+  }
+
+  /* stylelint-disable-next-line at-rule-no-unknown */
+  @theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+  }
+
+  /* Force theme colors globally */
+  * {
+    border-color: var(--color-border);
+  }
+  
+  body {
+    background-color: oklch(0.9774 0.0106 189.8282) !important;
+    color: oklch(0.2795 0.0368 260.0310) !important;
+  }
+  
+  /* Force all main containers to use theme colors */
+  .container, main, #__next, [data-nextjs-page] {
+    background-color: oklch(0.9774 0.0106 189.8282) !important;
+    color: oklch(0.2795 0.0368 260.0310) !important;
+  }
+  
+  /* Apply theme to common page elements */
+  .min-h-screen {
+    background-color: oklch(0.9774 0.0106 189.8282) !important;
+    color: oklch(0.2795 0.0368 260.0310) !important;
+  }
+  
+  /* Ensure cards use the proper card colors */
+  .bg-card {
+    background-color: oklch(0.9774 0.0106 189.8282) !important;
+    color: oklch(0.2795 0.0368 260.0310) !important;
+  }
+  
+  /* Ensure muted backgrounds are visible */
+  .bg-muted {
+    background-color: oklch(0.9476 0.0190 192.8095) !important;
+    color: oklch(0.5544 0.0407 257.4166) !important;
+  }
+  
+  /* Fix primary and secondary colors */
+  .bg-primary {
+    background-color: oklch(0.7124 0.0977 186.6761) !important;
+    color: oklch(1.0000 0 0) !important;
+  }
+  
+  .bg-secondary {
+    background-color: oklch(0.7657 0.1276 358.9636) !important;
+    color: oklch(0.2795 0.0368 260.0310) !important;
+  }
+
+  /* Apply proper border radius to elements */
+  .rounded-sm { border-radius: var(--radius-sm) !important; }
+  .rounded-md { border-radius: var(--radius-md) !important; }
+  .rounded-lg { border-radius: var(--radius-lg) !important; }
+  .rounded-xl { border-radius: var(--radius-xl) !important; }
+  .rounded { border-radius: var(--radius-md) !important; }
+}
+
+/* Fix readability issues with dropdowns and popovers */
+@layer components {
+  /* Ensure dropdowns have solid backgrounds and proper contrast */
+  .dropdown-content,
+  .select-content,
+  .popover-content {
+    background: var(--color-popover) !important;
+    color: var(--color-popover-foreground) !important;
+    border: 1px solid var(--color-border) !important;
+    box-shadow: var(--shadow-lg) !important;
+  }
+  
+  /* Remove any problematic backdrop filters or transparency */
+  [data-radix-popper-content-wrapper],
+  [data-radix-select-content],
+  [data-radix-dropdown-menu-content] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  /* Fix Select component specifically with higher specificity */
+  div[data-radix-select-content],
+  [data-radix-select-content][data-state="open"],
+  [data-radix-select-content][data-state="closed"] {
+    background-color: oklch(0.9774 0.0106 189.8282) !important;
+    color: oklch(0.2795 0.0368 260.0310) !important;
+    border: 1px solid oklch(0.8708 0.0470 189.6325) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  div[data-radix-select-item],
+  [data-radix-select-item][data-state="checked"],
+  [data-radix-select-item][data-state="unchecked"] {
+    background-color: transparent !important;
+    color: oklch(0.2795 0.0368 260.0310) !important;
+    opacity: 1 !important;
+  }
+  
+  div[data-radix-select-item][data-highlighted],
+  [data-radix-select-item][data-highlighted][data-state="checked"],
+  [data-radix-select-item][data-highlighted][data-state="unchecked"] {
+    background-color: oklch(0.9476 0.0190 192.8095) !important;
+    color: oklch(0.2795 0.0368 260.0310) !important;
+    opacity: 1 !important;
+  }
+  
+  /* Fix Dropdown Menu component specifically with higher specificity */
+  div[data-radix-dropdown-menu-content],
+  [data-radix-dropdown-menu-content][data-state="open"],
+  [data-radix-dropdown-menu-content][data-state="closed"] {
+    background-color: oklch(0.9774 0.0106 189.8282) !important;
+    color: oklch(0.2795 0.0368 260.0310) !important;
+    border: 1px solid oklch(0.8708 0.0470 189.6325) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  div[data-radix-dropdown-menu-item],
+  [data-radix-dropdown-menu-item][data-state="checked"],
+  [data-radix-dropdown-menu-item][data-state="unchecked"] {
+    background-color: transparent !important;
+    color: oklch(0.2795 0.0368 260.0310) !important;
+    opacity: 1 !important;
+  }
+  
+  div[data-radix-dropdown-menu-item][data-highlighted],
+  [data-radix-dropdown-menu-item][data-highlighted][data-state="checked"],
+  [data-radix-dropdown-menu-item][data-highlighted][data-state="unchecked"] {
+    background-color: oklch(0.9476 0.0190 192.8095) !important;
+    color: oklch(0.2795 0.0368 260.0310) !important;
+    opacity: 1 !important;
+  }
+  
+  /* Dark mode overrides */
+  .dark div[data-radix-select-content],
+  .dark [data-radix-select-content][data-state="open"],
+  .dark [data-radix-select-content][data-state="closed"] {
+    background-color: oklch(0.2575 0.0166 196.1661) !important;
+    color: oklch(0.9288 0.0126 255.5078) !important;
+    border: 1px solid oklch(0.3430 0.0196 196.2761) !important;
+  }
+  
+  .dark div[data-radix-select-item],
+  .dark [data-radix-select-item][data-state="checked"],
+  .dark [data-radix-select-item][data-state="unchecked"] {
+    background-color: transparent !important;
+    color: oklch(0.9288 0.0126 255.5078) !important;
+  }
+  
+  .dark div[data-radix-select-item][data-highlighted],
+  .dark [data-radix-select-item][data-highlighted][data-state="checked"],
+  .dark [data-radix-select-item][data-highlighted][data-state="unchecked"] {
+    background-color: oklch(0.3430 0.0196 196.2761) !important;
+    color: oklch(0.9288 0.0126 255.5078) !important;
+  }
+  
+  /* Ensure state machine visualizer has proper contrast */
+  .state-machine-visualizer {
+    background: var(--color-card) !important;
+    color: var(--color-card-foreground) !important;
+    border: 1px solid var(--color-border) !important;
+  }
+  
+  /* Fix any translucent overlays */
+  .overlay,
+  .backdrop {
+    background: var(--color-background) !important;
+    opacity: 0.8;
+    backdrop-filter: blur(2px) !important;
+  }
+  
+  /* Force proper text contrast for all UI elements */
+  .text-muted-foreground {
+    color: var(--color-muted-foreground) !important;
+  }
+  
+  /* Fix button hover states */
+  button:hover {
+    opacity: 0.9;
+  }
+  
+  /* State Machine Visualizer - Force complete opacity and readability */
+  .state-machine-visualizer,
+  .state-machine-visualizer * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    opacity: 1 !important;
+  }
+  
+  .state-machine-visualizer {
+    background: #f9fafb !important;
+    color: #1f2937 !important;
+    border: 2px solid #d1d5db !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  }
+  
+  .state-machine-show-btn {
+    background: #f9fafb !important;
+    color: #1f2937 !important;
+    border: 1px solid #d1d5db !important;
+    opacity: 1 !important;
+  }
+  
+  /* Solution Controls - Ensure proper button layout */
+  .flex-wrap {
+    flex-wrap: wrap !important;
+  }
+  
+  .flex-1 {
+    flex: 1 1 0% !important;
+  }
+  
+  .min-w-0 {
+    min-width: 0px !important;
+  }
+  
+  /* Additional override for any Radix portal content */
+  div[data-radix-popper-content-wrapper] > div,
+  div[data-radix-select-portal] > div,
+  div[data-radix-dropdown-menu-portal] > div {
+    background-color: oklch(0.9774 0.0106 189.8282) !important;
+    color: oklch(0.2795 0.0368 260.0310) !important;
+    border: 1px solid oklch(0.8708 0.0470 189.6325) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* NUCLEAR OPTION - Force all Radix UI dropdowns to be readable */
+@layer utilities {
+  /* Override any and all Radix Select components */
+  *[data-radix-select-content] {
+    background: #f9fafb !important;
+    color: #1f2937 !important;
+    border: 1px solid #d1d5db !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  * [data-radix-select-item] {
+    background: transparent !important;
+    color: #1f2937 !important;
+    opacity: 1 !important;
+  }
+  
+  * [data-radix-select-item][data-highlighted] {
+    background: #f3f4f6 !important;
+    color: #1f2937 !important;
+    opacity: 1 !important;
+  }
+  
+  /* Override dropdown menus */
+  * [data-radix-dropdown-menu-content] {
+    background: #f9fafb !important;
+    color: #1f2937 !important;
+    border: 1px solid #d1d5db !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  * [data-radix-dropdown-menu-item] {
+    background: transparent !important;
+    color: #1f2937 !important;
+    opacity: 1 !important;
+  }
+  
+  * [data-radix-dropdown-menu-item][data-highlighted] {
+    background: #f3f4f6 !important;
+    color: #1f2937 !important;
+    opacity: 1 !important;
+  }
+}

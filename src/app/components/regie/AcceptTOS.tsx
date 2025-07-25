@@ -1,5 +1,7 @@
 import { useCallback, useRef, useState } from "react";
-import { Button, Checkbox } from "@blueprintjs/core";
+import { Button } from "@/app/components/ui/button";
+import { Checkbox } from "@/app/components/ui/checkbox";
+import { Label } from "@/app/components/ui/label";
 
 import { useReasonDemoDispatch, ReasonDemoActionTypes } from "@/app/context/ReasoningDemoContext";
 
@@ -26,10 +28,13 @@ export default function AcceptTOS() {
         });
     }, [dispatch, checked]);
 
-    return (<div>
-        <h1>Accept Terms of Service</h1>
-        <Checkbox checked={checked} onChange={onChange}>Accept</Checkbox>
-        <Button onClick={onNext}>
+    return (<div className="space-y-4">
+        <h1 className="text-2xl font-bold">Accept Terms of Service</h1>
+        <div className="flex items-center space-x-2">
+            <Checkbox id="tos" checked={checked} onCheckedChange={(checked) => setChecked(checked as boolean)} />
+            <Label htmlFor="tos">Accept</Label>
+        </div>
+        <Button onClick={onNext} variant="default">
             Next
         </Button>
     </div>);

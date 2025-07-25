@@ -1,5 +1,7 @@
 import { useCallback, useRef, useState } from "react";
-import { Button, FormGroup, InputGroup } from "@blueprintjs/core";
+import { Button } from "@/app/components/ui/button";
+import { Input } from "@/app/components/ui/input";
+import { Label } from "@/app/components/ui/label";
 import { useReasonDemoDispatch, ReasonDemoActionTypes } from "@/app/context/ReasoningDemoContext";
 
 export default function RegisterUser() {
@@ -29,45 +31,43 @@ export default function RegisterUser() {
     }, [dispatch, firstName, lastName, email]);
 
     return (
-        <div>
-            <h1>User Registration</h1>
-            <FormGroup
-                label="First Name"
-                labelFor="first-name-input"
-                labelInfo="(required)"
-            >
-                <InputGroup
+        <div className="space-y-4">
+            <h1 className="text-2xl font-bold">User Registration</h1>
+            <div className="space-y-2">
+                <Label htmlFor="first-name-input">
+                    First Name <span className="text-red-500">(required)</span>
+                </Label>
+                <Input
                     id="first-name-input"
                     placeholder="Enter your first name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                 />
-            </FormGroup>
-            <FormGroup
-                label="Last Name"
-                labelFor="last-name-input"
-                labelInfo="(required)"
-            >
-                <InputGroup
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="last-name-input">
+                    Last Name <span className="text-red-500">(required)</span>
+                </Label>
+                <Input
                     id="last-name-input"
                     placeholder="Enter your last name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                 />
-            </FormGroup>
-            <FormGroup
-                label="Email"
-                labelFor="email-input"
-                labelInfo="(required)"
-            >
-                <InputGroup
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="email-input">
+                    Email <span className="text-red-500">(required)</span>
+                </Label>
+                <Input
                     id="email-input"
+                    type="email"
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                 />
-            </FormGroup>
-            <Button onClick={onNext} intent="primary">
+            </div>
+            <Button onClick={onNext} variant="default">
                 Register
             </Button>
         </div>

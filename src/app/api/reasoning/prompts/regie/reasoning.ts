@@ -192,8 +192,7 @@ async function getEvaluationTrainingData() {
 
 export async function solver(query: string) {
   // Define the persona and task for the AI model
-  const system = `You are a helpful AI assistant tasked with assisting in user registration flows 
-  Your job is to reason about how best to register the user taking into account their requested preferences and the required and optional steps.`;
+  const system = `You are a helpful AI assistant tasked with assisting in user registration flows. Your job is to reason about how best to register the user taking into account their requested preferences and the required and optional steps.`;
 
   // List of subproblems and their descriptions
   const user = `

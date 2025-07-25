@@ -32,12 +32,6 @@
 
 .formula-control-button-group {
   margin-bottom: 20px;
-
-  .generate-formula-button > span.bp5-button-text {
-    min-width: 150px;
-    display: inline-block;
-    min-height: 8px;
-  }
 }
 
 .formula-table {
@@ -152,10 +146,7 @@
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
-
-    .bp5-button {
-      margin-left: 10px;
-    }
+    gap: 10px;
   }
 }
 
@@ -233,12 +224,8 @@
     .left-group {
       margin-bottom: 10px;
 
-      .bp5-button-group {
+      .search-bar {
         width: 100%;
-
-        .search-bar {
-          width: 100%;
-        }
       }
     }
   }

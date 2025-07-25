@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { Button } from "@blueprintjs/core";
+import { Button } from "@/app/components/ui/button";
 
 import { engineV1 as engine } from "@/app/api/reasoning";
 import { useReasonDemoStore, useReasonDemoDispatch, ReasonDemoActionTypes } from "@/app/context/ReasoningDemoContext";
@@ -146,10 +146,10 @@ export default function RecallSolution() {
         metadata: {},
     };
 
-    return (<div>
-        <h1>Review Retrieved Product</h1>
+    return (<div className="space-y-4">
+        <h1 className="text-2xl font-bold">Review Retrieved Product</h1>
         <p>This is an example of how you can render components in response to state changes. In this example we are displaying a component that would allow the user to review a recalled chemical product for the query:</p>
-        <pre>
+        <pre className="p-4 bg-gray-100 rounded-md overflow-x-auto">
             {query}
         </pre>
         <p>
@@ -162,11 +162,13 @@ export default function RecallSolution() {
         <p>
             Using the recalled solution will trigger a different path.
         </p>
-        <Button onClick={() => onNext(sampleRecalledSolution)}>
-            Use Recalled Solution
-        </Button>
-        <Button onClick={() => onNext('No solution found')}>
-            Dont Use Recalled Solution
-        </Button>
+        <div className="flex gap-2">
+            <Button onClick={() => onNext(sampleRecalledSolution)} variant="default">
+                Use Recalled Solution
+            </Button>
+            <Button onClick={() => onNext('No solution found')} variant="outline">
+                Dont Use Recalled Solution
+            </Button>
+        </div>
     </div>)
 }
