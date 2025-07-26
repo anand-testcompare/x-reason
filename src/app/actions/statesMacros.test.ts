@@ -48,6 +48,12 @@ describe('machineMacro', () => {
         }
       });
 
+      // Add timeout protection to prevent infinite hanging
+      const timeout = setTimeout(() => {
+        machineExecution.stop();
+        reject(new Error('Test timed out - state machine never reached success/failure'));
+      }, 5000); // 5 second timeout
+
       // Subscribe to state changes
       machineExecution.subscribe((state) => {
         const stateNode = testMachine.getStateNodeById(state.value as string);
@@ -57,6 +63,8 @@ describe('machineMacro', () => {
         state.context.stack?.push(state.value as string);
         switch (state.value) {
           case "success":
+            clearTimeout(timeout);
+            machineExecution.stop(); // ✅ CRITICAL FIX: Stop the actor
             // TODO logging
             // console.log(JSON.stringify(state.context));
             expect(JSON.stringify(state.context)).toBe(JSON.stringify({status:0,requestId:id,stack:["step1","step2","pauseStep","resumeStep","step5","success"],step1Log:{message:"Step 1 completed"},step2Log:{message:"Step 2 completed"},step4Log:{message:"Step 4 completed"},step5Log:{message:"Step 5 completed"}}))
@@ -65,6 +73,8 @@ describe('machineMacro', () => {
             resolve(state.context);
             break;
           case "failure":
+            clearTimeout(timeout);
+            machineExecution.stop(); // ✅ CRITICAL FIX: Stop the actor
             // TODO error reporting
             reject(state.context);
             break;
@@ -81,5 +91,5 @@ describe('machineMacro', () => {
 
       machineExecution.start();
     });
-  });
+  }, 10000); // Increase Jest timeout to 10 seconds
 });
