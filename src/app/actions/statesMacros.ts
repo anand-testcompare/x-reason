@@ -209,7 +209,7 @@ export function generateStatelyVizUrl(
   const config = {
     id: machineId,
     initial: Array.from(stepsMap.keys())[0] || 'start',
-    states: {}
+    states: {} as { [key: string]: any }
   };
   
   // Build states from stepsMap
