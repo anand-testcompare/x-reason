@@ -52,11 +52,11 @@ export function useAgentDemo({
     const [componentToRender, setComponentToRender] = useState<React.ReactNode>(null);
     
     // Determine initial provider and model based on available credentials
-    const getInitialProvider = () => {
+    const getInitialProvider = useCallback(() => {
         if (credentials.openaiApiKey) return 'openai';
         if (credentials.geminiApiKey) return 'gemini';
         return 'gemini'; // default fallback
-    };
+    }, [credentials.openaiApiKey, credentials.geminiApiKey]);
     
     const getDefaultModelForProvider = (provider: 'openai' | 'gemini') => {
         return provider === 'openai' ? 'gpt-4.1-nano' : 'gemini-2.0-flash';
@@ -89,7 +89,7 @@ export function useAgentDemo({
                 geminiApiKey: credentials.geminiApiKey,
             }
         }));
-    }, [credentials]);
+    }, [credentials, getInitialProvider]);
 
     // Create reasoning engine with user-selected AI config
     const reasoningEngine = useMemo(() => createReasoningEngineV2(aiConfig), [aiConfig]);

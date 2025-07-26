@@ -105,7 +105,7 @@ export function CredentialsModal() {
               </svg>
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
-                  <strong>Security Notice:</strong> Your API keys are only stored in your browser's memory and will be automatically cleared when you leave the page.
+                  <strong>Security Notice:</strong> Your API keys are only stored in your browser&apos;s memory and will be automatically cleared when you leave the page.
                 </p>
               </div>
             </div>

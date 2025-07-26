@@ -134,7 +134,7 @@ function useStreamingLogic({ ref, stateRef }: { ref: RefObject<HTMLTextAreaEleme
         } finally {
             setIsLoading(false);
         }
-    }, [ref, sampleCatalog, toolsCatalog, programmer, evaluate, dispatch]);
+    }, [ref, sampleCatalog, toolsCatalog, programmer, evaluate, dispatch, credentials]);
 
     const onSubmit = useCallback(async () => {
         setComponentToRender(<DefaultComponent message="I am exploring the knowledge base to find a solution to your query." />);
