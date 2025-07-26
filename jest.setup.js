@@ -14,18 +14,24 @@ if (typeof global.TextEncoder === 'undefined') {
   global.TextDecoder = TextDecoder;
 }
 
-require('dotenv').config({ path: '.env.local' });
-require('reflect-metadata'); // Required for InversifyJS
+// Load environment variables if available (optional)
+try {
+  require('dotenv').config({ path: '.env.local' });
+} catch (e) {
+  console.warn('⚠️  No .env.local found - using test defaults (this is fine for CI/testing)');
+}
 
 // Environment setup
 process.env.NODE_ENV = 'test';
 
-// Mock environment variables for testing
+// Provide test defaults for missing API keys (warn instead of fail)
 if (!process.env.GEMINI_API_KEY) {
   process.env.GEMINI_API_KEY = 'test-gemini-key';
+  console.warn('⚠️  Using test default for GEMINI_API_KEY');
 }
 if (!process.env.OPENAI_API_KEY) {
   process.env.OPENAI_API_KEY = 'test-openai-key';
+  console.warn('⚠️  Using test default for OPENAI_API_KEY');
 }
 
 // Global test utilities
