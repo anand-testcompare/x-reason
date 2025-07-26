@@ -50,8 +50,22 @@ export function useAgentDemo({
     const [query, setQuery] = useState<string>();
     const [isLoading, setIsLoading] = useState(false);
     const [componentToRender, setComponentToRender] = useState<React.ReactNode>(null);
+    
+    // Determine initial provider and model based on available credentials
+    const getInitialProvider = useCallback(() => {
+        if (credentials.openaiApiKey) return 'openai';
+        if (credentials.geminiApiKey) return 'gemini';
+        return 'gemini'; // default fallback
+    }, [credentials.openaiApiKey, credentials.geminiApiKey]);
+    
+    const getDefaultModelForProvider = (provider: 'openai' | 'gemini') => {
+        return provider === 'openai' ? 'gpt-4.1-nano' : 'gemini-2.0-flash';
+    };
+    
+    const initialProvider = getInitialProvider();
     const [aiConfig, setAiConfig] = useState<AIConfig>({ 
-        provider: 'gemini',
+        provider: initialProvider,
+        model: getDefaultModelForProvider(initialProvider),
         credentials: {
             openaiApiKey: credentials.openaiApiKey,
             geminiApiKey: credentials.geminiApiKey,
@@ -63,14 +77,19 @@ export function useAgentDemo({
     
     // Update AI config when credentials change
     useEffect(() => {
+        const newProvider = getInitialProvider();
+        const newModel = getDefaultModelForProvider(newProvider);
+        
         setAiConfig(prev => ({
             ...prev,
+            provider: newProvider,
+            model: newModel,
             credentials: {
                 openaiApiKey: credentials.openaiApiKey,
                 geminiApiKey: credentials.geminiApiKey,
             }
         }));
-    }, [credentials]);
+    }, [credentials, getInitialProvider]);
 
     // Create reasoning engine with user-selected AI config
     const reasoningEngine = useMemo(() => createReasoningEngineV2(aiConfig), [aiConfig]);

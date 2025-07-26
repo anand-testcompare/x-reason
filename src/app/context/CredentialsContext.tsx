@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
 export interface APICredentials {
   openaiApiKey?: string;
@@ -53,12 +53,12 @@ export function CredentialsProvider({ children, hasServerCredentials = false }: 
     }
   };
 
-  const clearCredentials = () => {
+  const clearCredentials = useCallback(() => {
     setCredentialsState({});
     if (!hasServerCredentials) {
       setNeedsCredentials(true);
     }
-  };
+  }, [hasServerCredentials]);
 
   // Clear credentials when the user navigates away or closes the tab
   useEffect(() => {
@@ -80,7 +80,7 @@ export function CredentialsProvider({ children, hasServerCredentials = false }: 
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [hasServerCredentials]);
+  }, [hasServerCredentials, clearCredentials]);
 
   return (
     <CredentialsContext.Provider value={{
