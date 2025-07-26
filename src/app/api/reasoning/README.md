@@ -11,7 +11,7 @@ Today's LLMs are not capable of complex reasoning tasks. Models do not "think". 
 
 ### Current Proposal
 
-You can view an early draft of the reasoning architecture [here](https://medium.com/@dorians/applying-dynamic-programming-principles-to-llm-reasoning-tasks-763587dc9891). This article mainly focuses on the application of the principles of dynamic programming and the use of state machines as an execution engine for AI generated solutions to problems. This proposal does not contain a solution for memory which is still an area of ongoing research.
+You can view an early draft of the reasoning architecture in the article ["Applying Dynamic Programming Principles to LLM Reasoning Tasks"](https://medium.com/@dorians/applying-dynamic-programming-principles-to-llm-reasoning-tasks-763587dc9891). This article mainly focuses on the application of the principles of dynamic programming and the use of state machines as an execution engine for AI generated solutions to problems. This proposal does not contain a solution for memory which is still an area of ongoing research.
 
 ### WIP
 
@@ -359,7 +359,7 @@ sg:MixingConditionC a sg:Condition ;
 
 ### Importing the Ontology using NeoSemantics
 
-Documentation on NeoSemantics can be found [here](https://github.com/neo4j-labs/neosemantics)
+For more information, see the NeoSemantics documentation on the Neo4j Labs GitHub repository: [NeoSemantics (n10s) documentation](https://github.com/neo4j-labs/neosemantics).
 
 ```cypher
 // Initialize Graph Configuration

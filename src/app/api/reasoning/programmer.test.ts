@@ -1,5 +1,4 @@
 import { interpret } from "xstate";
-import 'openai/shims/node';
 
 import { StateConfig, programV1, Context, MachineEvent, Task } from "./";
 

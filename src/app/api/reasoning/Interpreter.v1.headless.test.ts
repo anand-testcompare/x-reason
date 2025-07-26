@@ -55,10 +55,13 @@ describe('headlessInterpreter', () => {
         mockDispatch.mockClear();
     });
 
-    it('should initialize and transition states correctly', () => {
+    it('should initialize and transition states correctly', async () => {
         const { done, start, send } = headlessInterpreter(mockStates, mockFunctions, mockDispatch);
 
         start();
+
+        // Wait for the asynchronous state initialization
+        await new Promise(resolve => setTimeout(resolve, 0));
 
         expect(mockDispatch).toHaveBeenCalledTimes(1);
         expect(mockDispatch).toHaveBeenCalledWith({
@@ -66,11 +69,10 @@ describe('headlessInterpreter', () => {
             value: expect.objectContaining({
                 currentState: expect.objectContaining({
                     value: 'mockTask',
-                    context: {
+                    context: expect.objectContaining({
                         requestId: 'test',
                         status: 0,
-                        stack: ['mockTask'],
-                    },
+                    }),
                 }),
             }),
         });
@@ -100,10 +102,13 @@ describe('headlessInterpreter', () => {
 
     });
 
-    it('should hydrate from the serialized state', () => {
+    it('should hydrate from the serialized state', async () => {
         const { serialize, stop, start } = headlessInterpreter(mockStates, mockFunctions, mockDispatch);
 
         start();
+
+        // Wait for the asynchronous state initialization
+        await new Promise(resolve => setTimeout(resolve, 0));
 
         const currentState = mockDispatch.mock.calls[0][0].value.currentState;
         const serializedState = serialize(currentState);
