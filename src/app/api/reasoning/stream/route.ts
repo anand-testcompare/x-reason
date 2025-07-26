@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, provider = 'gemini' } = await request.json();
+    const { query, provider = 'gemini', credentials } = await request.json();
     
     if (!query) {
       return new Response('Query is required', { status: 400 });
@@ -21,7 +21,8 @@ export async function POST(request: NextRequest) {
             body: JSON.stringify({
               messages: [{ role: 'user', content: query }],
               provider: provider,
-              stream: true
+              stream: true,
+              credentials: credentials
             })
           });
 

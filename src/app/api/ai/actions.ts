@@ -9,22 +9,25 @@ export async function aiChatCompletion(
   messages: AIMessage[],
   config: AIConfig = { provider: 'gemini' }
 ): Promise<string | null> {
-  const { provider, model } = config;
+  const { provider, model, credentials } = config;
   const requestId = AILogger.generateRequestId();
   const actualModel = getModelForProvider(provider, model);
   
   console.log(`🤖 [AI-PROVIDER] Starting ${provider} completion with model: ${actualModel} (Request ID: ${requestId})`);
+  console.log(`🤖 [AI-PROVIDER] Credentials available: openai=${credentials?.openaiApiKey ? 'YES' : 'NO'}, gemini=${credentials?.geminiApiKey ? 'YES' : 'NO'} (Request ID: ${requestId})`);
   
   try {
     let result: string | null = null;
     
     if (provider === 'openai') {
+      console.log(`🤖 [AI-PROVIDER] Calling OpenAI with API key: ${credentials?.openaiApiKey ? 'PROVIDED' : 'NOT PROVIDED'} (Request ID: ${requestId})`);
       result = await chatCompletion({
         messages,
         model: actualModel as any
-      }, requestId);
+      }, requestId, credentials?.openaiApiKey);
     } else if (provider === 'gemini') {
-      result = await geminiChatCompletion(messages, requestId, actualModel);
+      console.log(`🤖 [AI-PROVIDER] Calling Gemini with API key: ${credentials?.geminiApiKey ? 'PROVIDED' : 'NOT PROVIDED'} (Request ID: ${requestId})`);
+      result = await geminiChatCompletion(messages, requestId, actualModel, credentials?.geminiApiKey);
     } else {
       throw new Error(`Unsupported provider: ${provider}`);
     }

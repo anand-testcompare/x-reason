@@ -31,7 +31,13 @@ const regieSubmissionLogic: AgentSubmissionLogic = async ({
     dispatch,
     setComponentToRender
 }) => {
-    // Step 1: Get task list from AI solver
+    // Step 1: Check if solver is available
+    if (!solver) {
+        setComponentToRender(<Error message="Solver not available. Please refresh the page and try again." />);
+        return;
+    }
+
+    // Step 2: Get task list from AI solver
     setComponentToRender(<DefaultComponent message="Analyzing your registration requirements..." />);
     const solverResult = await reasoningEngine.solver.solve(userQuery, solver);
     console.log("Solver result:", solverResult);
@@ -41,7 +47,13 @@ const regieSubmissionLogic: AgentSubmissionLogic = async ({
         return;
     }
 
-    // Step 2: Convert task list to state machine
+    // Step 3: Check if programmer is available
+    if (!programmer) {
+        setComponentToRender(<Error message="Programmer not available. Please refresh the page and try again." />);
+        return;
+    }
+
+    // Step 4: Convert task list to state machine
     setComponentToRender(<DefaultComponent message="Generating state machine for your registration flow..." />);
     const programResult = await reasoningEngine.programmer.program(
         solverResult, 
@@ -55,7 +67,7 @@ const regieSubmissionLogic: AgentSubmissionLogic = async ({
         return;
     }
 
-    // Step 3: Store the results in state management
+    // Step 5: Store the results in state management
     dispatch({
         type: ReasonDemoActionTypes.SET_STATE,
         value: {

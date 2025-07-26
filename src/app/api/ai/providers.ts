@@ -12,31 +12,45 @@ export interface AIMessage {
   content: string;
 }
 
+export interface AICredentials {
+  openaiApiKey?: string;
+  geminiApiKey?: string;
+}
+
 export interface AIConfig {
   provider: AIProvider;
   model?: OpenAIModel | GeminiModel;
+  credentials?: AICredentials;
 }
 
 // Default models for each provider
 const DEFAULT_MODELS: Record<AIProvider, OpenAIModel | GeminiModel> = {
-  openai: 'o4-mini',
+  openai: 'gpt-4.1-nano',
   gemini: 'gemini-2.0-flash'
 };
 
 export function getModelForProvider(provider: AIProvider, model?: OpenAIModel | GeminiModel): string {
-  return model || DEFAULT_MODELS[provider];
+  // Only use default if no model is explicitly provided
+  if (model) {
+    return model;
+  }
+  return DEFAULT_MODELS[provider];
 }
 
 export async function aiChatCompletion(
   messages: AIMessage[],
   config: AIConfig = { provider: 'gemini' }
 ): Promise<string | null> {
-  const { provider, model } = config;
+  const { provider, model, credentials } = config;
   const requestId = AILogger.generateRequestId();
   const startTime = Date.now();
   
+  console.log(`🔧 [AI_PROVIDER] Config received:`, { provider, model, hasCredentials: !!credentials });
+  
   // Get the actual model name to use
   const modelName = getModelForProvider(provider, model);
+  
+  console.log(`🔧 [AI_PROVIDER] Using model:`, modelName);
   
   // Log the request
   AILogger.logRequest(provider, modelName, messages, requestId);
@@ -49,11 +63,11 @@ export async function aiChatCompletion(
         result = await chatCompletion({
           messages: messages as any,
           model: modelName as OpenAIModel
-        }, requestId);
+        }, requestId, credentials?.openaiApiKey);
         break;
       
       case 'gemini':
-        result = await geminiChatCompletion(messages, requestId, modelName as GeminiModel);
+        result = await geminiChatCompletion(messages, requestId, modelName as GeminiModel, credentials?.geminiApiKey);
         break;
       
       default:

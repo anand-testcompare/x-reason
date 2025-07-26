@@ -7,9 +7,15 @@ const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
 
 let genAI: GoogleGenerativeAI;
 
-function lazyGeminiInit() {
-  if (!genAI) {
-    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+function lazyGeminiInit(apiKey?: string) {
+  const keyToUse = apiKey || process.env.GEMINI_API_KEY;
+  if (!keyToUse) {
+    throw new Error('Gemini API key is required but not provided');
+  }
+  
+  // Create a new instance if we don't have one or if using a different API key
+  if (!genAI || (apiKey && apiKey !== process.env.GEMINI_API_KEY)) {
+    genAI = new GoogleGenerativeAI(keyToUse);
   }
 }
 
@@ -21,9 +27,10 @@ export interface GeminiMessage {
 export async function geminiChatCompletion(
   messages: { role: 'system' | 'user' | 'assistant', content: string }[],
   requestId?: string,
-  modelName: string = DEFAULT_GEMINI_MODEL
+  modelName: string = DEFAULT_GEMINI_MODEL,
+  apiKey?: string
 ) {
-  lazyGeminiInit();
+  lazyGeminiInit(apiKey);
   
   console.log(`🔧 [GEMINI-INTERNAL] Starting completion with model: ${modelName} (Request ID: ${requestId || 'N/A'})`);
   

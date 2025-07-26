@@ -8,6 +8,7 @@ import { StateMachineVisualizer } from "@/app/components/StateMachineVisualizer"
 import { AgentDemoTemplateProps, LoadingSpinner, ResponsiveContainer, SampleQueries, JsonHighlighter } from "./AgentDemoTemplate";
 import { Textarea } from "@/app/components/ui/textarea";
 import { AIProviderSelector } from "@/app/components/ui/ai-provider-selector";
+import { useCredentials } from "@/app/context/CredentialsContext";
 import { ArrowUp, ArrowLeft, ArrowRight, Play, Copy, Check, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import Interpreter from "@/app/api/reasoning/Interpreter.v1.headed";
 import { LocalStorage } from "@/app/components";
@@ -25,6 +26,7 @@ const STEPS = [
 ];
 
 export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: AgentDemoTemplateProps) {
+  const { credentials } = useCredentials();
   const [currentStep, setCurrentStep] = useState(0);
   const [compiledMachine, setCompiledMachine] = useState<any>(null);
   const [executionResults, setExecutionResults] = useState<Array<{state: string, result: string, timestamp: Date}>>([]);
@@ -354,7 +356,8 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
         body: JSON.stringify({
           query: prompt,
           type: 'solve',
-          provider: hookReturn.aiConfig.provider || 'gemini'
+          provider: hookReturn.aiConfig.provider || 'gemini',
+          credentials: credentials
         })
       });
 
