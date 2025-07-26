@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "jest"
+    "test": "jest",
+    "unused": "ts-unused-exports tsconfig.json --excludePathsFromReport=\"\\.next/types;/route\\.ts;/layout\\.tsx;/index\\.ts$\" --ignoreFiles=\".*\\.d\\.ts$\" --ignoreLocallyUsed"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

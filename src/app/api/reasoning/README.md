@@ -1,5 +1,7 @@
 # Chemli Reasoning Engine
 
+## Overview
+
 Today's LLMs are not capable of complex reasoning tasks. Models do not "think". They are statical algorithms limited to the information encoded into their neural nets as part fo training, and contained within their context window. This doesn't allow for the recall of of previous solutions, or the application of the principles of dynamic programming which break down complex solutions into memoized subproblems. The goal of the reasoning engine is to provide a temporary solution to these limitations until things like [analog processors](https://www.techopedia.com/analog-computing-for-ai-how-it-could-make-us-re-think-the-future), [ReRAM](https://en.wikipedia.org/wiki/Resistive_random-access_memory) ([video](https://www.youtube.com/watch?v=P9kcbGvToFU)), and [Neuromorphic Computing](https://www.techtarget.com/searchenterpriseai/definition/neuromorphic-computing) mature.
 
 ### Business Value
@@ -17,7 +19,7 @@ I'm currently experimenting with the combination of a semantic search in Postgre
 
 We'll be using [Prisma](https://www.prisma.io/docs/orm/prisma-schema/data-model/models#defining-models) as it provides both and ORM solution and the ability to execute direct SQL commands. Prisma makes modeling the data much easier and our persistance layer will be easily portable. The current schema is defined as follows:
 
-```
+```typescript
 model User {
   id        Int      @id @default(autoincrement())
   name      String
@@ -186,11 +188,11 @@ The Ontology will be used to store information about formulas including ingredie
 
 I plan to create an Ontology using ttl (Turtle) format applying schema.org entities where applicable. We'll use NeoSemantics from Neo4J to parse the RDF data into a Cypher and populate the resulting graph. Formula instances can then be saved to the Ontology and Neo4J will automatically populate the graph relationships. Research data can be found at:
 
-- https://github.com/neo4j-labs/neosemantics
-- https://neo4j.com/blog/ontologies-in-neo4j-semantics-and-knowledge-graphs/
-- https://neo4j.com/labs//neosemantics/4.3/introduction/
-- Going meta Ep 5: https://www.youtube.com/watch?v=05Wkg1p34ek
-- Going metaEp 6: https://www.youtube.com/watch?v=fpt-OsGOzmo
+- <https://github.com/neo4j-labs/neosemantics>
+- <https://neo4j.com/blog/ontologies-in-neo4j-semantics-and-knowledge-graphs/>
+- <https://neo4j.com/labs//neosemantics/4.3/introduction/>
+- Going meta Ep 5: <https://www.youtube.com/watch?v=05Wkg1p34ek>
+- Going metaEp 6: <https://www.youtube.com/watch?v=fpt-OsGOzmo>
 
 Below is the current proposed Ontology:
 
@@ -540,7 +542,7 @@ We can deploy our NextJS app using Docker and services like ECS/EKS. There's not
 
 If we still need more performance we can move to use local memory. What I propose is we use a technology that can compute the dot product quickly and deploy it as a microservice. While each container instance will have different subproblems in its cache, we can use session pinning for a consistent user experience.
 MOJO could be an interesting pick because it's a superset of Python and offers similar feature to low level programing langagues:
-https://betterprogramming.pub/exploring-mojo-the-emerging-high-performance-language-with-impressive-speeds-but-not-without-acdbbbed09f2
+<https://betterprogramming.pub/exploring-mojo-the-emerging-high-performance-language-with-impressive-speeds-but-not-without-acdbbbed09f2>
 
 [Video Demo](https://www.youtube.com/watch?v=6GvB5lZJqcE)
 

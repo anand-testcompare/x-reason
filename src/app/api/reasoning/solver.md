@@ -1,4 +1,6 @@
-# Product Development
+# solver
+
+## Product Development
 
 Q: What are the steps I have to take to create a new cosmetic product like lip balm, soap, eye shadow, shower gel, etc?
 A: First, recall any existing solutions for a similar product. If an existing solution can used return it, else generate the ingredients list. Then perform an ingredients database search for relevant ingredients. After that in parallel run regulatory checks and concentration estimation for the retrieved ingredients. Once those steps are complete generate the product formula. Then have an expert review the generated formula. After that perform lab testing. Then evaluate the complete tested formula. Next generate the manufacturing instructions. Then have an expert review the generated manufacturing instructions. After that conduct market research, then generate marketing claims. Finally, generate a product image.
@@ -15,7 +17,7 @@ A: First, recall any existing solutions for a similar product. If an existing so
 Q: What if I just want the regulatory checks for a new cosmetic product?
 A: First, recall any existing solutions for a similar product. If an existing solution can used return it, else generate the ingredients list. Then perform an ingredients database search for relevant ingredients. Lastly, run regulatory checks.
 
-# Change Management
+## Change Management
 
 Q: What are the steps I need to take when changing a cosmetic product formula and manufacturing instructions?
 A: In parallel run regulatory checks and concentration estimation for the formula ingredients. After that perform lab testing. Then evaluate the complete tested formula. Then check if the changes will impact the marketing claims, and if so notify marketing about the changes with the impact summary. Then notify manufacturing about the changes with the results of an inventory and supply chain impact study.

@@ -103,7 +103,7 @@ const chemliConfig: AgentConfig = {
     }
 };
 
-export default function ReasonDemo() {
+function ReasonDemo() {
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const stateRef = useRef<HTMLTextAreaElement>(null);
     

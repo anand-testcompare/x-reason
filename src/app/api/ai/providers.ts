@@ -89,15 +89,3 @@ export async function aiChatCompletion(
   }
 }
 
-export async function aiGenerateContent(
-  prompt: string,
-  config: AIConfig = { provider: 'gemini' }
-): Promise<string | null> {
-  console.log(`📝 [PROVIDER] aiGenerateContent called with provider: ${config.provider}`);
-  
-  const messages: AIMessage[] = [
-    { role: 'user', content: prompt }
-  ];
-  
-  return aiChatCompletion(messages, config);
-}

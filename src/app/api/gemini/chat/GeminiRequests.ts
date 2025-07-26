@@ -79,21 +79,3 @@ export async function geminiChatCompletion(
   return response.text();
 }
 
-export async function geminiGenerateContent(prompt: string, modelName: string = DEFAULT_GEMINI_MODEL) {
-  lazyGeminiInit();
-  
-  const model = genAI.getGenerativeModel({ model: modelName });
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  
-  return response.text();
-}
-
-export async function geminiGenerateEmbedding(text: string) {
-  lazyGeminiInit();
-  
-  const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
-  const result = await model.embedContent(text);
-  
-  return result.embedding.values;
-}

@@ -3,7 +3,7 @@ import { geminiChatCompletion } from "./GeminiRequests";
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages } = await request.json();
+    const { messages, model } = await request.json();
     
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
@@ -12,11 +12,11 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const response = await geminiChatCompletion(messages);
+    const response = await geminiChatCompletion(messages, undefined, model);
     
     return NextResponse.json({ 
       content: response,
-      model: "gemini-2.0-flash"
+      model: model || "gemini-2.0-flash" // Show the actual model used (with fallback to default)
     });
   } catch (error) {
     console.error("Gemini API error:", error);
