@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Navigation, NavigationProvider, MainContent, InspectorInitializer } from './components'
+import { Navigation, NavigationProvider, MainContent, InspectorInitializer, CredentialsWrapper } from './components'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -31,13 +31,15 @@ export default function RootLayout({
           padding: 0 
         }}
       >
-        <NavigationProvider>
-          <InspectorInitializer />
-          <Navigation />
-          <MainContent>
-            {children}
-          </MainContent>
-        </NavigationProvider>
+        <CredentialsWrapper>
+          <NavigationProvider>
+            <InspectorInitializer />
+            <Navigation />
+            <MainContent>
+              {children}
+            </MainContent>
+          </NavigationProvider>
+        </CredentialsWrapper>
       </body>
     </html>
   )

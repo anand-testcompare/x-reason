@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator, SelectLabel, SelectGroup } from "./select";
 import { Label } from "./label";
 import { AIConfig, OpenAIModel, GeminiModel } from "../../api/ai/providers";
+import { useCredentials } from "../../context/CredentialsContext";
 
 interface AIProviderSelectorProps {
   config: AIConfig;
@@ -25,20 +26,26 @@ const selectContentStyle = {
 };
 
 export function AIProviderSelector({ config, onChange, className }: AIProviderSelectorProps) {
+  const { availableProviders } = useCredentials();
+  
   const handleModelChange = useCallback((value: string) => {
     const [provider, model] = value.split(':');
     onChange({
+      ...config,
       provider: provider as AIConfig['provider'],
       model: model as OpenAIModel | GeminiModel
     });
-  }, [onChange]);
+  }, [onChange, config]);
 
   const getDefaultModel = () => {
-    return config.provider === 'openai' ? 'o4-mini' : 'gemini-2.0-flash';
+    return config.provider === 'openai' ? 'gpt-4.1-nano' : 'gemini-2.0-flash';
   };
 
   const currentModel = config.model || getDefaultModel();
   const currentValue = `${config.provider}:${currentModel}`;
+
+  const showGemini = availableProviders.includes('gemini');
+  const showOpenAI = availableProviders.includes('openai');
 
   return (
     <div className={className || ''}>
@@ -50,25 +57,31 @@ export function AIProviderSelector({ config, onChange, className }: AIProviderSe
           <SelectValue placeholder="Select AI Model" />
         </SelectTrigger>
         <SelectContent style={selectContentStyle}>
-          <SelectGroup>
-            <SelectLabel>Google Gemini</SelectLabel>
-            {GEMINI_MODELS.map((model) => (
-              <SelectItem key={`gemini:${model}`} value={`gemini:${model}`}>
-                {model}
-                {model === 'gemini-2.0-flash' ? ' (Default)' : ''}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-          <SelectSeparator />
-          <SelectGroup>
-            <SelectLabel>OpenAI GPT</SelectLabel>
-            {OPENAI_MODELS.map((model) => (
-              <SelectItem key={`openai:${model}`} value={`openai:${model}`}>
-                {model}
-                {model === 'o4-mini' ? ' (Default)' : ''}
-              </SelectItem>
-            ))}
-          </SelectGroup>
+          {showGemini && (
+            <>
+              <SelectGroup>
+                <SelectLabel>Google Gemini</SelectLabel>
+                {GEMINI_MODELS.map((model) => (
+                  <SelectItem key={`gemini:${model}`} value={`gemini:${model}`}>
+                    {model}
+                    {model === 'gemini-2.0-flash' ? ' (Default)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              {showOpenAI && <SelectSeparator />}
+            </>
+          )}
+          {showOpenAI && (
+            <SelectGroup>
+              <SelectLabel>OpenAI GPT</SelectLabel>
+              {OPENAI_MODELS.map((model) => (
+                <SelectItem key={`openai:${model}`} value={`openai:${model}`}>
+                  {model}
+                  {model === 'gpt-4.1-nano' ? ' (Default)' : ''}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          )}
         </SelectContent>
       </Select>
     </div>

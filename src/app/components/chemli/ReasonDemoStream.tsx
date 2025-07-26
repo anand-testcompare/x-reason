@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/ca
 import { Textarea } from "@/app/components/ui/textarea";
 import { Spinner } from "@/app/components/ui/spinner";
 import { useSearchParams } from 'next/navigation';
+import { useCredentials } from "@/app/context/CredentialsContext";
 
 import { engineV1 as engine } from "@/app/api/reasoning";
 import Interpreter from "@/app/api/reasoning/Interpreter.v1.headed";
@@ -24,6 +25,7 @@ function useStreamingLogic({ ref, stateRef }: { ref: RefObject<HTMLTextAreaEleme
     const engineType = searchParams.get('engineType') as EngineTypes || EngineTypes.CHEMLI;
     const { states, currentState, context, solution, functions, factory } = useReasonDemoStore();
     const dispatch = useReasonDemoDispatch();
+    const { credentials } = useCredentials();
     const [query, setQuery] = useState<string>();
     const [isLoading, setIsLoading] = useState(false);
     const [componentToRender, setComponentToRender] = useState(() => (<div></div>));
@@ -58,7 +60,8 @@ function useStreamingLogic({ ref, stateRef }: { ref: RefObject<HTMLTextAreaEleme
                 },
                 body: JSON.stringify({ 
                     query: userQuery, 
-                    type: 'solve' 
+                    type: 'solve',
+                    credentials: credentials
                 }),
             });
 

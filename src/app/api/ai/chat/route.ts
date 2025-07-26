@@ -8,9 +8,10 @@ export async function POST(request: NextRequest) {
   console.log(`🌐 [API-ROUTE] Incoming AI chat request (Request ID: ${requestId})`);
   
   try {
-    const { messages, provider = 'gemini', model } = await request.json();
+    const { messages, provider = 'gemini', model, credentials } = await request.json();
     
     console.log(`🌐 [API-ROUTE] Request details: provider=${provider}, model=${model || 'default'}, messages=${messages?.length || 0} (Request ID: ${requestId})`);
+    console.log(`🌐 [API-ROUTE] Credentials received: ${credentials ? 'YES' : 'NO'}, openai: ${credentials?.openaiApiKey ? 'YES' : 'NO'}, gemini: ${credentials?.geminiApiKey ? 'YES' : 'NO'} (Request ID: ${requestId})`);
     
     if (!messages || !Array.isArray(messages)) {
       console.log(`🌐 [API-ROUTE] Bad request: Invalid messages array (Request ID: ${requestId})`);
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const config: AIConfig = { provider, model };
+    const config: AIConfig = { provider, model, credentials };
     const response = await aiChatCompletion(messages, config);
     
     if (!response) {
@@ -44,21 +45,14 @@ export async function POST(request: NextRequest) {
     console.log(`🌐 [API-ROUTE] Successful response: ${response.length} chars from ${provider}/${actualModel} (Request ID: ${requestId})`);
     
     return NextResponse.json({ 
-      content: response,
+      response,
       provider,
-      model: actualModel,
-      requestId
+      model: actualModel
     });
-  } catch (error) {
-    const duration = Date.now();
-    console.error(`🌐 [API-ROUTE] Error processing request (Request ID: ${requestId}):`, error);
-    
+  } catch (error: any) {
+    console.log(`🌐 [API-ROUTE] Error processing request (Request ID: ${requestId}):`, error);
     return NextResponse.json(
-      { 
-        error: "Internal server error", 
-        message: error instanceof Error ? error.message : "Unknown error",
-        requestId 
-      },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

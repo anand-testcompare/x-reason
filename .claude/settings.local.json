@@ -12,7 +12,8 @@
       "Bash(grep:*)",
       "Bash(pnpm build:*)",
       "Bash(pnpm list:*)",
-      "Bash(pnpm dev:*)"
+      "Bash(pnpm dev:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": []
   }

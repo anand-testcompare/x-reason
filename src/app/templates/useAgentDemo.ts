@@ -6,6 +6,7 @@ import { EngineTypes, ReasonDemoActionTypes, useReasonDemoStore, useReasonDemoDi
 import { DefaultComponent, Success } from "@/app/components/chemli";
 import { Error } from "@/app/components";
 import { AgentConfig, AgentDemoHookReturn } from "./AgentDemoTemplate";
+import { useCredentials } from "@/app/context/CredentialsContext";
 
 // Base submission logic interface
 export interface AgentSubmissionLogic {
@@ -44,15 +45,33 @@ export function useAgentDemo({
     const engineType = searchParams.get('engineType') as EngineTypes || defaultEngineType;
     const { states, currentState, context, solution, functions, factory } = useReasonDemoStore();
     const dispatch = useReasonDemoDispatch();
+    const { credentials } = useCredentials();
     
     const [query, setQuery] = useState<string>();
     const [isLoading, setIsLoading] = useState(false);
     const [componentToRender, setComponentToRender] = useState<React.ReactNode>(null);
-    const [aiConfig, setAiConfig] = useState<AIConfig>({ provider: 'gemini' });
+    const [aiConfig, setAiConfig] = useState<AIConfig>({ 
+        provider: 'gemini',
+        credentials: {
+            openaiApiKey: credentials.openaiApiKey,
+            geminiApiKey: credentials.geminiApiKey,
+        }
+    });
     
     const [isExpanded, setIsExpanded] = useState(false);
     const [copySuccess, setCopySuccess] = useState(false);
     
+    // Update AI config when credentials change
+    useEffect(() => {
+        setAiConfig(prev => ({
+            ...prev,
+            credentials: {
+                openaiApiKey: credentials.openaiApiKey,
+                geminiApiKey: credentials.geminiApiKey,
+            }
+        }));
+    }, [credentials]);
+
     // Create reasoning engine with user-selected AI config
     const reasoningEngine = useMemo(() => createReasoningEngineV2(aiConfig), [aiConfig]);
     
@@ -122,6 +141,12 @@ export function useAgentDemo({
             return;
         }
 
+        if (!factoryResult) {
+            setComponentToRender(React.createElement(Error, { message: "Factory not initialized. Please refresh the page." }));
+            setIsLoading(false);
+            return;
+        }
+
         try {
             await submissionLogic({
                 userQuery,
@@ -139,7 +164,7 @@ export function useAgentDemo({
         } finally {
             setIsLoading(false);
         }
-    }, [reasoningEngine, inputRef, solver, programmer, toolsCatalog, dispatch, submissionLogic]);
+    }, [reasoningEngine, inputRef, solver, programmer, toolsCatalog, dispatch, submissionLogic, factoryResult]);
 
     // State changes handler
     const onStateChanges = useCallback(() => {

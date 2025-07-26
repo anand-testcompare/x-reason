@@ -12,7 +12,7 @@ export async function initializeInspector() {
     
     // Initialize the inspector globally - this will automatically inspect all actors
     const inspector = createBrowserInspector({
-      autoStart: true,
+      autoStart: false,
     });
     
     inspectorInitialized = true;
