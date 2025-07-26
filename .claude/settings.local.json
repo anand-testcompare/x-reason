@@ -14,7 +14,9 @@
       "Bash(pnpm list:*)",
       "Bash(pnpm dev:*)",
       "Bash(npm uninstall:*)",
-      "Bash(gh pr create:*)"
+      "Bash(gh pr create:*)",
+      "Bash(mkdir:*)",
+      "Bash(pnpm run lint:*)"
     ],
     "deny": []
   }
