@@ -356,7 +356,7 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
         body: JSON.stringify({
           query: prompt,
           type: 'solve',
-          provider: hookReturn.aiConfig.provider || 'gemini',
+          provider: hookReturn.aiConfig?.provider || 'gemini',
           credentials: credentials
         })
       });
@@ -386,7 +386,44 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
             try {
               const data = JSON.parse(line.slice(6));
               
-              if (data.type === 'complete') {
+              if (data.type === 'progress') {
+                console.log(`Progress for state ${stateName}:`, data.data);
+                // Update progress in UI if needed
+              } else if (data.type === 'content') {
+                // Safely extract and accumulate the content
+                const extractedContent = safeExtractContent(data.content);
+                accumulatedContent += extractedContent;
+                
+                // Update the result with the accumulated content
+                setExecutionResults(prev => {
+                  const newResults = [...prev];
+                  // Find or create the content result for this state
+                  const contentIndex = newResults.findIndex(r => 
+                    r.state === stateName && 
+                    !r.result.startsWith('🔄') && 
+                    !r.result.startsWith('✅') &&
+                    !r.result.startsWith('❌') &&
+                    !r.result.startsWith('Error:')
+                  );
+                  
+                  if (contentIndex >= 0) {
+                    // Update existing result
+                    newResults[contentIndex] = {
+                      ...newResults[contentIndex],
+                      result: accumulatedContent
+                    };
+                  } else {
+                    // Add new content result
+                    newResults.push({
+                      state: stateName,
+                      result: accumulatedContent,
+                      timestamp: new Date()
+                    });
+                  }
+                  
+                  return newResults;
+                });
+              } else if (data.type === 'complete') {
                 console.log(`Stream complete for state ${stateName}`);
                 
                 // Mark state as completed
@@ -397,7 +434,7 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
                 });
                 
                 // Auto-collapse completed states (except the last one)
-                const isLastState = stateName === 'success' || stateName === states[states.length - 1]?.id;
+                const isLastState = stateName === 'success' || stateName === states?.[states.length - 1]?.id;
                 if (!isLastState) {
                   setTimeout(() => {
                     setCollapsedStates(prev => {
@@ -405,7 +442,7 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
                       newSet.add(stateName);
                       return newSet;
                     });
-                  }, 2000); // Give user time to see completion
+                  }, 3000); // Give user time to see completion
                 }
                 
                 // Add completion message
@@ -414,45 +451,15 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
                   result: `✅ Completed state: ${stateName}`,
                   timestamp: new Date()
                 }]);
+                
+                break; // Exit the streaming loop
               } else if (data.type === 'error') {
                 console.error(`Stream error for state ${stateName}:`, data.data);
                 throw new Error(data.data);
-              } else if (data.content) {
-                // Safely extract and accumulate the content
-                const extractedContent = safeExtractContent(data.content);
-                accumulatedContent += extractedContent;
-                
-                // Update the last result with the accumulated content
-                setExecutionResults(prev => {
-                  const newResults = [...prev];
-                  // Find the last result for this state that isn't a status message
-                  const lastIndex = newResults.findLastIndex(r => 
-                    r.state === stateName && 
-                    !r.result.startsWith('🔄') && 
-                    !r.result.startsWith('✅') &&
-                    !r.result.startsWith('❌')
-                  );
-                  
-                  if (lastIndex >= 0) {
-                    // Update existing result
-                    newResults[lastIndex] = {
-                      ...newResults[lastIndex],
-                      result: accumulatedContent
-                    };
-                  } else {
-                    // Add new result
-                    newResults.push({
-                      state: stateName,
-                      result: accumulatedContent,
-                      timestamp: new Date()
-                    });
-                  }
-                  
-                  return newResults;
-                });
               }
-            } catch (error) {
-              console.error('Error parsing SSE data:', error);
+            } catch (parseError) {
+              console.error('Error parsing SSE data:', parseError);
+              // Don't throw here, continue reading the stream
             }
           }
         }
@@ -464,7 +471,7 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
       console.error(`Error in state ${stateName}:`, error);
       setExecutionResults(prev => [...prev, {
         state: stateName,
-        result: `❌ Error in state ${stateName}: ${error}`,
+        result: `❌ Error in state ${stateName}: ${error instanceof Error ? error.message : String(error)}`,
         timestamp: new Date()
       }]);
       throw error; // Re-throw to ensure the promise rejects

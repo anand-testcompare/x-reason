@@ -1,4 +1,6 @@
 import { NextRequest } from 'next/server';
+import { aiChatCompletion } from "../../ai/actions";
+import { AIConfig } from "../../ai/providers";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,44 +14,19 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Use the AI chat API for streaming instead of the hardcoded engine
-          const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ai/chat`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messages: [{ role: 'user', content: query }],
-              provider: provider,
-              stream: true,
-              credentials: credentials
-            })
-          });
+          // Send progress update
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'progress', data: 'Processing your query...' })}\n\n`));
 
-          if (!response.ok) {
-            throw new Error(`AI API error: ${response.status}`);
+          // Use the AI chat API directly (non-streaming for now)
+          const config: AIConfig = { provider, credentials };
+          const response = await aiChatCompletion([{ role: 'user', content: query }], config);
+
+          if (!response) {
+            throw new Error('Failed to get response from AI provider');
           }
 
-          // Stream the AI response
-          const reader = response.body?.getReader();
-          const decoder = new TextDecoder();
-          
-          if (reader) {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              
-              const chunk = decoder.decode(value);
-              // Stream each chunk as content
-              if (chunk.trim()) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`));
-              }
-            }
-          } else {
-            // Fallback to non-streaming response
-            const result = await response.text();
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'content', content: result })}\n\n`));
-          }
+          // Send the response as content
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'content', content: response })}\n\n`));
           
           // Send completion marker
           controller.enqueue(encoder.encode('data: {"type": "complete"}\n\n'));
@@ -71,6 +48,9 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
   } catch (error) {
