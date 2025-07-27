@@ -11,6 +11,6 @@
     }
   },
   "markdownlint.config": {
-    "extends": "../.markdownlint.json"
+    "extends": "example.markdownlint-cli2.jsonc"
   }
 }

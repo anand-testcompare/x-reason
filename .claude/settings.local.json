@@ -16,7 +16,16 @@
       "Bash(npm uninstall:*)",
       "Bash(gh pr create:*)",
       "Bash(mkdir:*)",
-      "Bash(pnpm run lint:*)"
+      "Bash(pnpm run lint:*)",
+      "Bash(mv:*)",
+      "Bash(npm test:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm test -- --testPathPattern=programmer.test.ts --maxWorkers=1)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm test -- --testPathPattern=parallel.test.ts --maxWorkers=1)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm test -- --testPathPattern=parallel.test.ts --maxWorkers=1 --verbose)",
+      "Bash(rm:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm test -- --testPathPattern=programmer.test.ts --maxWorkers=1 --testTimeout=10000)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm test -- --testPathPattern=Interpreter.v1.headless.test.ts --maxWorkers=1)",
+      "Bash(timeout 20s npm test -- --testPathPattern=programmer.test.ts --testNamePattern=\"Test parallel execution timing to verify concurrency\")"
     ],
     "deny": []
   }

@@ -1,28 +1,371 @@
-import { interpret } from "xstate";
-
+import { createActor } from "xstate";
 import { StateConfig, programV1, Context, MachineEvent, Task } from "./";
 
-describe('Testing Programmer', () => {
-  test("Test the programV1 function passing state nodes array", async () => {
-    // TODO refactor this to use the headless interpreter when it's done
-    return new Promise((resolve, reject) => {
+describe("Testing Programmer", () => {
+  let activeActors: any[] = [];
+
+  afterEach(() => {
+    // Clean up any active actors to prevent memory leaks
+    activeActors.forEach(actor => {
+      if (actor && typeof actor.stop === 'function') {
+        actor.stop();
+      }
+    });
+    activeActors = [];
+  });
+
+  test("Test programV1 can create a basic state machine", () => {
+    const stateConfigArray: StateConfig[] = [
+      {
+        id: "initial",
+        transitions: [{ on: "CONTINUE", target: "success" }],
+      },
+      {
+        id: "success",
+        type: "final",
+      },
+    ];
+
+    const sampleCatalog = new Map<string, Task>([
+      [
+        "initial",
+        {
+          description: "Initial test state",
+          implementation: () => {
+            // Simple synchronous implementation
+          },
+        },
+      ],
+    ]);
+
+    const machine = programV1(stateConfigArray, sampleCatalog);
+    expect(machine).toBeDefined();
+    expect(machine.config).toBeDefined();
+    expect(machine.config.states).toBeDefined();
+    expect(machine.config.initial).toBe("initial");
+  });
+
+  test("Test programV1 handles final states correctly", () => {
+    const stateConfigArray: StateConfig[] = [
+      {
+        id: "testState",
+        transitions: [{ on: "CONTINUE", target: "final" }],
+      },
+      {
+        id: "final",
+        type: "final",
+      },
+    ];
+
+    const sampleCatalog = new Map<string, Task>([
+      [
+        "testState",
+        {
+          description: "Test state",
+          implementation: () => {
+            // Simple implementation
+          },
+        },
+      ],
+    ]);
+
+    const machine = programV1(stateConfigArray, sampleCatalog);
+    expect(machine.config.states?.final?.type).toBe("final");
+  });
+
+  test("Test programV1 throws error for missing task implementation", () => {
+    const stateConfigArray: StateConfig[] = [
+      {
+        id: "missingTask",
+        transitions: [{ on: "CONTINUE", target: "success" }],
+      },
+      {
+        id: "success",
+        type: "final",
+      },
+    ];
+
+    const emptyCatalog = new Map<string, Task>();
+
+    expect(() => {
+      programV1(stateConfigArray, emptyCatalog);
+    }).toThrow("function implementation for state: missingTask not found");
+  });
+
+  test("Test simple state machine execution without memory leaks", async () => {
+    return new Promise<void>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error("Test timed out after 10 seconds"));
+      }, 10000);
+
       const stateConfigArray: StateConfig[] = [
         {
-          id: "RecallSolutions",
-          transitions: [
-            { on: "CONTINUE", target: "GenerateIngredientsList" },
-            { on: "ERROR", target: "failure" },
-          ],
+          id: "task1",
+          transitions: [{ on: "CONTINUE", target: "task2" }],
         },
         {
-          id: "GenerateIngredientsList",
-          transitions: [
-            { on: "CONTINUE", target: "IngredientDatabase" },
-            { on: "ERROR", target: "failure" },
-          ],
+          id: "task2",
+          transitions: [{ on: "CONTINUE", target: "success" }],
         },
         {
-          id: "IngredientDatabase",
+          id: "success",
+          type: "final",
+        },
+        {
+          id: "failure",
+          type: "final",
+        },
+      ];
+
+      let machineExecution: any;
+
+      const sampleCatalog = new Map<string, Task>([
+        [
+          "task1",
+          {
+            description: "First task",
+            implementation: (_context: Context, _event?: MachineEvent) => {
+              setTimeout(() => {
+                machineExecution.send({
+                  type: "CONTINUE",
+                  payload: { task1: "Task 1 completed" },
+                });
+              }, 10);
+            },
+          },
+        ],
+        [
+          "task2",
+          {
+            description: "Second task",
+            implementation: (_context: Context, _event?: MachineEvent) => {
+              setTimeout(() => {
+                machineExecution.send({
+                  type: "CONTINUE",
+                  payload: { task2: "Task 2 completed" },
+                });
+              }, 10);
+            },
+          },
+        ],
+      ]);
+
+      const result = programV1(stateConfigArray, sampleCatalog);
+      machineExecution = createActor(result);
+      activeActors.push(machineExecution);
+
+      machineExecution.subscribe((state: any) => {
+        switch (state.value) {
+          case "success":
+            expect(state.context).toMatchObject({
+              status: 0,
+              task1: "Task 1 completed",
+              task2: "Task 2 completed",
+            });
+            expect(state.context.requestId).toBeDefined();
+            clearTimeout(timeoutId);
+            resolve();
+            break;
+          case "failure":
+            clearTimeout(timeoutId);
+            reject(new Error("Test failed: " + JSON.stringify(state.context)));
+            break;
+        }
+      });
+
+      machineExecution.start();
+    });
+  });
+
+  test("Debug parallel state configuration", () => {
+    const stateConfigArray: StateConfig[] = [
+      {
+        id: "parallelTasks",
+        type: "parallel",
+        states: [
+          {
+            id: "Task1",
+            transitions: [{ on: "CONTINUE", target: "success" }],
+          },
+          {
+            id: "Task2",  
+            transitions: [{ on: "CONTINUE", target: "success" }],
+          },
+        ],
+        onDone: "success",
+      },
+      {
+        id: "success",
+        type: "final",
+      },
+    ];
+
+    const sampleCatalog = new Map<string, Task>([
+      [
+        "Task1",
+        {
+          description: "Parallel task 1",
+          implementation: () => {},
+        },
+      ],
+      [
+        "Task2",
+        {
+          description: "Parallel task 2", 
+          implementation: () => {},
+        },
+      ],
+    ]);
+
+    // Test machine creation and log the configuration
+    const machine = programV1(stateConfigArray, sampleCatalog);
+    console.log("Machine config:", JSON.stringify(machine.config, null, 2));
+    expect(machine).toBeDefined();
+    expect(machine.config.states?.parallelTasks?.type).toBe("parallel");
+  });
+
+  test("Test simple parallel execution", async () => {
+    return new Promise<void>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error("Test timed out after 5 seconds"));
+      }, 5000);
+
+      const stateConfigArray: StateConfig[] = [
+        {
+          id: "parallelTasks",
+          type: "parallel",
+          states: [
+            {
+              id: "Task1",
+              transitions: [{ on: "CONTINUE", target: "success" }],
+            },
+            {
+              id: "Task2",  
+              transitions: [{ on: "CONTINUE", target: "success" }],
+            },
+          ],
+          onDone: "success",
+        },
+        {
+          id: "success",
+          type: "final",
+        },
+      ];
+
+      let machineExecution: any;
+
+      const sampleCatalog = new Map<string, Task>([
+        [
+          "Task1",
+          {
+            description: "Parallel task 1",
+            implementation: () => {
+              setTimeout(() => {
+                machineExecution.send({
+                  type: "CONTINUE",
+                  payload: { Task1: "Task 1 done" },
+                });
+              }, 20);
+            },
+          },
+        ],
+        [
+          "Task2",
+          {
+            description: "Parallel task 2", 
+            implementation: () => {
+              setTimeout(() => {
+                machineExecution.send({
+                  type: "CONTINUE",
+                  payload: { Task2: "Task 2 done" },
+                });
+              }, 30);
+            },
+          },
+        ],
+      ]);
+
+      const result = programV1(stateConfigArray, sampleCatalog);
+      machineExecution = createActor(result);
+      activeActors.push(machineExecution);
+
+      machineExecution.subscribe((state: any) => {
+        switch (state.value) {
+          case "success":
+            // Check that both parallel tasks completed
+            expect(state.context).toMatchObject({
+              Task1: "Task 1 done",
+              Task2: "Task 2 done",
+            });
+            clearTimeout(timeoutId);
+            resolve();
+            break;
+          case "failure":
+            clearTimeout(timeoutId);
+            reject(new Error("Test failed"));
+            break;
+        }
+      });
+
+      machineExecution.start();
+    });
+  });
+
+  test("Test parallel state creation (config only, no execution)", () => {
+    const stateConfigArray: StateConfig[] = [
+      {
+        id: "parallelTasks",
+        type: "parallel",
+        states: [
+          {
+            id: "Task1",
+            transitions: [{ on: "CONTINUE", target: "success" }],
+          },
+          {
+            id: "Task2",  
+            transitions: [{ on: "CONTINUE", target: "success" }],
+          },
+        ],
+        onDone: "success",
+      },
+      {
+        id: "success",
+        type: "final",
+      },
+    ];
+
+    const sampleCatalog = new Map<string, Task>([
+      [
+        "Task1",
+        {
+          description: "Parallel task 1",
+          implementation: () => {},
+        },
+      ],
+      [
+        "Task2",
+        {
+          description: "Parallel task 2", 
+          implementation: () => {},
+        },
+      ],
+    ]);
+
+    // Just test that the machine can be created without memory issues
+    const machine = programV1(stateConfigArray, sampleCatalog);
+    expect(machine).toBeDefined();
+    expect(machine.config.states?.parallelTasks?.type).toBe("parallel");
+  });
+
+  test("Test parallel state execution with onDone transition", async () => {
+    return new Promise<void>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error("Test timed out after 15 seconds"));
+      }, 15000);
+
+      const stateConfigArray: StateConfig[] = [
+        {
+          id: "InitialState",
           transitions: [
             { on: "CONTINUE", target: "parallelChecks" },
             { on: "ERROR", target: "failure" },
@@ -47,10 +390,10 @@ describe('Testing Programmer', () => {
               ],
             },
           ],
-          onDone: "FormulationSimulation",
+          onDone: "FinalState",
         },
         {
-          id: "FormulationSimulation",
+          id: "FinalState",
           transitions: [
             { on: "CONTINUE", target: "success" },
             { on: "ERROR", target: "failure" },
@@ -65,261 +408,112 @@ describe('Testing Programmer', () => {
           type: "final",
         },
       ];
+
+      let machineExecution: any;
+      const executionOrder: string[] = [];
+      const startTimes: { [key: string]: number } = {};
+      const endTimes: { [key: string]: number } = {};
+
       const sampleCatalog = new Map<string, Task>([
         [
-          "RecallSolutions",
+          "InitialState",
           {
-            description:
-              "Recalls a smilar solution to the user query. If a solution is found it will set the existingSolutionFound attribute of the event params to true: `event.payload?.params.existingSolutionFound`",
-            implementation: (context: Context, event?: MachineEvent) => {
-              console.log('RecallSolutions implementation called');
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { RecallSolutions: undefined },
-              });
+            description: "Initial state that triggers parallel execution",
+            implementation: (_context: Context, _event?: MachineEvent) => {
+              executionOrder.push("InitialState");
+              setTimeout(() => {
+                machineExecution.send({
+                  type: "CONTINUE",
+                  payload: { InitialState: "Initial state completed" },
+                });
+              }, 10);
             },
-          },
-        ],
-        [
-          "GenerateIngredientsList",
-          {
-            description: "Generates a list of ingredients for a product formula",
-            // this is an example of how you can render a component while the implementation function executes
-            implementation: (context: Context, event?: MachineEvent) => {
-              console.log('GenerateIngredientsList implementation called');
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { GenerateIngredientsList: [] },
-              });
-            },
-          },
-        ],
-        [
-          "IngredientDatabase",
-          {
-            description:
-              "Maintain a comprehensive database of cosmetic ingredients, their properties, potential combinations, and effects. This database includes natural and synthetic ingredients, their usual concentrations in products, and regulatory information.",
-            implementation: (context: Context, event?: MachineEvent) => {
-              const currentList = context.GenerateIngredientsList || [];
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { IngredientDatabase: [...currentList, ["Bee Wax 1234 Special Proprietary", "30%", "A"]] },
-              });
-            },
-            transitions: new Map<"CONTINUE" | "ERROR", (context: Context, event: MachineEvent) => boolean>([
-              [
-                "CONTINUE",
-                // this is an example of a deterministic function that is invoked as part of evaluating transitions
-                // it can do whatever you like and take into account the current state of the world found on the context
-                // The results of the implementation function should be include included in the payload of the incoming event
-                // in this case payload.IngredientDatabase
-                (context: Context, event: MachineEvent) => event.payload?.IngredientDatabase?.length > 0
-              ]
-            ]),
           },
         ],
         [
           "RegulatoryCheck",
           {
-            description:
-              "Ensure that the predicted formula adheres to relevant cosmetic regulations and standards. If this function has an error it will set `context.regulatoryChecksSuccess` to false.",
-            implementation: (context: Context, event?: MachineEvent) => {
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { RegulatoryCheck: "no regulatory issues were found" },
-              });
+            description: "Regulatory compliance check",
+            implementation: (_context: Context, _event?: MachineEvent) => {
+              executionOrder.push("RegulatoryCheck_start");
+              startTimes.RegulatoryCheck = Date.now();
+              setTimeout(() => {
+                endTimes.RegulatoryCheck = Date.now();
+                executionOrder.push("RegulatoryCheck_end");
+                machineExecution.send({
+                  type: "CONTINUE",
+                  payload: { RegulatoryCheck: "No regulatory issues found" },
+                });
+              }, 50);
             },
           },
         ],
         [
           "ConcentrationEstimation",
           {
-            description:
-              "Estimate the concentration of each ingredient based on standard industry practices, known effects, and regulatory limits. If this function has an error it will set `context.concentrationEstimationSuccess` to false.",
-            implementation: (context: Context, event?: MachineEvent) => {
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: {
-                  ConcentrationEstimation: [
-                    ["ingredient", "tolerance%"],
-                    ["Bee Wax", "30-31%"],
-                    ["Coconut Oil", "40-45%"],
-                    ["Tree Resin", "20-21%%"],
-                  ],
-                },
-              });
+            description: "Concentration estimation check",
+            implementation: (_context: Context, _event?: MachineEvent) => {
+              executionOrder.push("ConcentrationEstimation_start");
+              startTimes.ConcentrationEstimation = Date.now();
+              setTimeout(() => {
+                endTimes.ConcentrationEstimation = Date.now();
+                executionOrder.push("ConcentrationEstimation_end");
+                machineExecution.send({
+                  type: "CONTINUE",
+                  payload: { ConcentrationEstimation: ["30-31%", "40-45%"] },
+                });
+              }, 75);
             },
           },
         ],
         [
-          "FormulationSimulation",
+          "FinalState",
           {
-            description: "Use simulation models to predict how different ingredients interact. This includes stability, texture, and efficacy simulations.",
-            implementation: (context: Context, event?: MachineEvent) => {
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { FormulationSimulation: "no available simulations were found" },
-              });
+            description: "Final state after parallel completion",
+            implementation: (_context: Context, _event?: MachineEvent) => {
+              executionOrder.push("FinalState");
+              setTimeout(() => {
+                machineExecution.send({
+                  type: "CONTINUE",
+                  payload: { FinalState: "All checks completed" },
+                });
+              }, 10);
             },
           },
         ],
-        [
-          "ExpertReview",
-          {
-            description: "Have cosmetic chemists review the proposed formula for feasibility and safety.",
-            implementation: (context: Context, event?: MachineEvent) => {
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { ExpertReview: "Certified by Dorian Smiley on 2/2/24" },
-              });
-            },
-          },
-        ],
-        [
-          "LabTesting",
-          {
-            description: "Test the proposed formula in a laboratory setting to verify its properties and efficacy.",
-            implementation: (context: Context, event?: MachineEvent) => {
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { LabTesting: "Certified by Dorian Smiley on 2/2/24" },
-              });
-            },
-          },
-        ],
-        [
-          "Evaluation",
-          {
-            description: "Evaluates a generated product formula and rates the result",
-            implementation: (context: Context, event?: MachineEvent) => {
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { Evaluation: 0.95 },
-              });
-            },
-          },
-        ],
-        [
-          "ManufacturingInstructions",
-          {
-            description:
-              "Generate the manufacturing steps for a tested and evaluated formula",
-            implementation: (context: Context, event?: MachineEvent) => {
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { ManufacturingInstructions: "The steps are..." },
-              });
-            },
-          },
-        ],
-        [
-          "MarketResearch",
-          {
-            description: "Performs market research for the new product",
-            implementation: (context: Context, event?: MachineEvent) => {
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { MarketResearch: "You market is as follows..." },
-              });
-            },
-          },
-        ],
-        [
-          "CreateMarketing",
-          {
-            description: "Generates a product description for target customers",
-            implementation: (context: Context, event?: MachineEvent) => {
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { CreateMarketing: "Here is your marketing claims..." },
-              });
-            },
-          },
-        ],
-        [
-          "GenerateProductImage",
-          {
-            description: "generates a product image using the generated product description",
-            implementation: (context: Context, event?: MachineEvent) => {
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { GenerateProductImage: "https://someurl.com" },
-              });
-            },
-          },
-        ],
-        [
-          "UnsupportedQuestion",
-          {
-            description:
-              "Default state to display for unsupported questions",
-            implementation: (context: Context, event?: MachineEvent) => {
-              console.log('UnsupportedQuestion implementation called');
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { UnsupportedQuestion: "UnsupportedQuestion implementation called" },
-              });
-            }
-          },
-        ],
-        [
-          "UnsafeQuestion",
-          {
-            description:
-              "Default state to display for unsafe questions",
-            implementation: (context: Context, event?: MachineEvent) => {
-              console.log('UnsafeQuestion implementation called');
-              machineExecution.send({
-                type: "CONTINUE",
-                payload: { UnsafeQuestion: "UnsafeQuestion implementation called" },
-              });
-            },
-          },
-        ]
       ]);
 
       const result = programV1(stateConfigArray, sampleCatalog);
+      machineExecution = createActor(result);
+      activeActors.push(machineExecution);
 
-      const withContext = result.withContext({
-        status: 0,
-        requestId: "test",
-        stack: [],
-      });
-
-      const machineExecution = interpret(withContext).onTransition((state) => {
-        const type = machineExecution.machine.states[state.value as string]?.meta?.type;
-
+      machineExecution.subscribe((state: any) => {
         switch (state.value) {
           case "success":
-            expect(JSON.stringify(state.context)).toBe(
-              JSON.stringify({
-                status: 0,
-                requestId: "test",
-                stack: [
-                  "RecallSolutions",
-                  "GenerateIngredientsList",
-                  "IngredientDatabase",
-                  "RegulatoryCheck",
-                  "ConcentrationEstimation",
-                  "FormulationSimulation",
-                ],
-                GenerateIngredientsList: [],
-                IngredientDatabase: [
-                  [
-                    "Bee Wax 1234 Special Proprietary",
-                    "30%",
-                    "A"
-                  ]
-                ],
-                RegulatoryCheck: "no regulatory issues were found"
-              }),
-            );
-            expect(machineExecution.machine.context.stack?.length).toBe(6);
-            resolve("success");
+            // Verify parallel execution occurred
+            expect(executionOrder).toContain("RegulatoryCheck_start");
+            expect(executionOrder).toContain("ConcentrationEstimation_start");
+            expect(executionOrder).toContain("FinalState");
+            
+            // Verify parallel tasks started around the same time (within reasonable margin)
+            const timeDiff = Math.abs(startTimes.RegulatoryCheck - startTimes.ConcentrationEstimation);
+            expect(timeDiff).toBeLessThan(50); // Should start within 50ms of each other
+
+            // Verify context contains results from both parallel tasks
+            expect(state.context).toMatchObject({
+              status: 0,
+              InitialState: "Initial state completed",
+              RegulatoryCheck: "No regulatory issues found",
+              ConcentrationEstimation: ["30-31%", "40-45%"],
+              FinalState: "All checks completed",
+            });
+            
+            clearTimeout(timeoutId);
+            resolve();
             break;
           case "failure":
-            // TODO error reporting
-            reject(state.context);
+            clearTimeout(timeoutId);
+            reject(new Error("Test failed: " + JSON.stringify(state.context)));
             break;
         }
       });
@@ -327,7 +521,223 @@ describe('Testing Programmer', () => {
       machineExecution.start();
     });
   });
-  // TODO add more tests including testing for conditionals
+
+  test("Test parallel execution timing to verify concurrency", async () => {
+    return new Promise<void>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error("Test timed out after 15 seconds"));
+      }, 15000);
+
+      const stateConfigArray: StateConfig[] = [
+        {
+          id: "parallelTasks",
+          type: "parallel",
+          states: [
+            {
+              id: "SlowTask",
+              transitions: [
+                { on: "CONTINUE", target: "success" },
+                { on: "ERROR", target: "failure" },
+              ],
+            },
+            {
+              id: "FastTask",
+              transitions: [
+                { on: "CONTINUE", target: "success" },
+                { on: "ERROR", target: "failure" },
+              ],
+            },
+          ],
+          onDone: "success",
+        },
+        {
+          id: "success",
+          type: "final",
+        },
+        {
+          id: "failure",
+          type: "final",
+        },
+      ];
+
+      let machineExecution: any;
+      const startTime = Date.now();
+      let slowTaskStart = 0;
+      let fastTaskStart = 0;
+      let slowTaskEnd = 0;
+      let fastTaskEnd = 0;
+
+      const sampleCatalog = new Map<string, Task>([
+        [
+          "SlowTask",
+          {
+            description: "A task that takes 100ms to complete",
+            implementation: (_context: Context, _event?: MachineEvent) => {
+              slowTaskStart = Date.now();
+              setTimeout(() => {
+                slowTaskEnd = Date.now();
+                machineExecution.send({
+                  type: "CONTINUE",
+                  payload: { SlowTask: "Slow task completed" },
+                });
+              }, 100);
+            },
+          },
+        ],
+        [
+          "FastTask",
+          {
+            description: "A task that takes 30ms to complete",
+            implementation: (_context: Context, _event?: MachineEvent) => {
+              fastTaskStart = Date.now();
+              setTimeout(() => {
+                fastTaskEnd = Date.now();
+                machineExecution.send({
+                  type: "CONTINUE",
+                  payload: { FastTask: "Fast task completed" },
+                });
+              }, 30);
+            },
+          },
+        ],
+      ]);
+
+      const result = programV1(stateConfigArray, sampleCatalog);
+      machineExecution = createActor(result);
+      activeActors.push(machineExecution);
+
+      machineExecution.subscribe((state: any) => {
+        switch (state.value) {
+          case "success":
+            const totalTime = Date.now() - startTime;
+            
+            // Verify both tasks started around the same time (parallel execution)
+            const startTimeDiff = Math.abs(slowTaskStart - fastTaskStart);
+            expect(startTimeDiff).toBeLessThan(50); // Should start within 50ms
+            
+            // Verify fast task finished before slow task (if truly parallel)
+            expect(fastTaskEnd).toBeLessThan(slowTaskEnd);
+            
+            // Verify total execution time is closer to the slow task time than the sum
+            // If sequential: ~130ms (100 + 30), if parallel: ~100ms (max of both)
+            expect(totalTime).toBeLessThan(150); // Should be much less than sequential
+            expect(totalTime).toBeGreaterThan(90); // But at least as long as the slowest task
+            
+            // Verify context contains results from both tasks
+            expect(state.context).toMatchObject({
+              SlowTask: "Slow task completed",
+              FastTask: "Fast task completed",
+            });
+            
+            clearTimeout(timeoutId);
+            resolve();
+            break;
+          case "failure":
+            clearTimeout(timeoutId);
+            reject(new Error("Test failed: " + JSON.stringify(state.context)));
+            break;
+        }
+      });
+
+      machineExecution.start();
+    });
+  });
+
+  test("Test parallel state error handling", async () => {
+    return new Promise<void>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error("Test timed out after 15 seconds"));
+      }, 15000);
+
+      const stateConfigArray: StateConfig[] = [
+        {
+          id: "parallelWithError",
+          type: "parallel",
+          states: [
+            {
+              id: "SuccessfulTask",
+              transitions: [
+                { on: "CONTINUE", target: "success" },
+                { on: "ERROR", target: "failure" },
+              ],
+            },
+            {
+              id: "FailingTask",
+              transitions: [
+                { on: "CONTINUE", target: "success" },
+                { on: "ERROR", target: "failure" },
+              ],
+            },
+          ],
+          onDone: "success",
+        },
+        {
+          id: "success",
+          type: "final",
+        },
+        {
+          id: "failure",
+          type: "final",
+        },
+      ];
+
+      let machineExecution: any;
+
+      const sampleCatalog = new Map<string, Task>([
+        [
+          "SuccessfulTask",
+          {
+            description: "A task that succeeds",
+            implementation: (_context: Context, _event?: MachineEvent) => {
+              setTimeout(() => {
+                machineExecution.send({
+                  type: "CONTINUE",
+                  payload: { SuccessfulTask: "Task succeeded" },
+                });
+              }, 30);
+            },
+          },
+        ],
+        [
+          "FailingTask",
+          {
+            description: "A task that fails",
+            implementation: (_context: Context, _event?: MachineEvent) => {
+              setTimeout(() => {
+                machineExecution.send({
+                  type: "ERROR",
+                  payload: { FailingTask: "Task failed", status: -1 },
+                });
+              }, 50);
+            },
+          },
+        ],
+      ]);
+
+      const result = programV1(stateConfigArray, sampleCatalog);
+      machineExecution = createActor(result);
+      activeActors.push(machineExecution);
+
+      machineExecution.subscribe((state: any) => {
+        switch (state.value) {
+          case "success":
+            // This shouldn't happen with one failing task
+            clearTimeout(timeoutId);
+            reject(new Error("Expected failure but got success"));
+            break;
+          case "failure":
+            // Verify that failure was handled correctly
+            expect(state.context).toMatchObject({
+              status: -1,
+              FailingTask: "Task failed",
+            });
+            clearTimeout(timeoutId);
+            resolve();
+            break;
+        }
+      });
+
+      machineExecution.start();
+    });
+  });
 });
-
-

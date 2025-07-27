@@ -6,7 +6,7 @@
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint && markdownlint '**/*.md' --ignore node_modules --ignore .next",
+    "lint": "next lint && markdownlint '**/*.md' --ignore node_modules --ignore .next --config .vscode/markdownlint.json",
     "test": "jest",
     "unused": "ts-unused-exports tsconfig.json --excludePathsFromReport=\"\\.next/types;/route\\.ts;/layout\\.tsx;/index\\.ts$\" --ignoreFiles=\".*\\.d\\.ts$\" --ignoreLocallyUsed"
   },

@@ -27,11 +27,11 @@ process.env.NODE_ENV = 'test';
 // Provide test defaults for missing API keys (warn instead of fail)
 if (!process.env.GEMINI_API_KEY) {
   process.env.GEMINI_API_KEY = 'test-gemini-key';
-  console.warn('⚠️  Using test default for GEMINI_API_KEY');
+  console.log('Using test default for GEMINI_API_KEY (API key not configured)');
 }
 if (!process.env.OPENAI_API_KEY) {
   process.env.OPENAI_API_KEY = 'test-openai-key';
-  console.warn('⚠️  Using test default for OPENAI_API_KEY');
+  console.log('Using test default for OPENAI_API_KEY (API key not configured)');
 }
 
 // Global test utilities
@@ -41,7 +41,7 @@ global.TestUtils = {
     choices: [{ message: { content: response } }],
     usage: { total_tokens: 100 }
   }),
-  
+
   // Mock Gemini response
   mockGeminiResponse: (text) => ({
     response: {
@@ -49,13 +49,13 @@ global.TestUtils = {
       candidates: [{ content: { parts: [{ text }] } }]
     }
   }),
-  
+
   // Generate test request ID
   generateTestRequestId: () => `test_req_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-  
+
   // Wait for async operations
   waitFor: (ms) => new Promise(resolve => setTimeout(resolve, ms)),
-  
+
   // Mock XState machine
   mockStateMachine: (states) => ({
     id: 'test-machine',
@@ -138,13 +138,13 @@ afterEach(() => {
   if (global.fetch && global.fetch.mockClear) {
     global.fetch.mockClear();
   }
-  
+
   // Reset localStorage and sessionStorage
   localStorageMock.getItem.mockClear();
   localStorageMock.setItem.mockClear();
   localStorageMock.removeItem.mockClear();
   localStorageMock.clear.mockClear();
-  
+
   sessionStorageMock.getItem.mockClear();
   sessionStorageMock.setItem.mockClear();
   sessionStorageMock.removeItem.mockClear();
