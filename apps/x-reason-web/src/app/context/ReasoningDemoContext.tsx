@@ -1,8 +1,16 @@
 "use client";
 import { ActionType, makeStore, factory } from "@/app/utils";
 import { MachineEvent, Context, StateConfig, Task, Prompt } from "@/app/api/reasoning";
-import { chemliEvaluate, chemliSolver, chemliProgrammer, chemliFunctionCatalog, chemliToolsCatalog, chemliMetaData } from "./chemli";
-import { regieEvaluate, regieSolver, regieProgrammer, regieFunctionCatalog, regieToolsCatalog, regieMetaData } from "./regie";
+import { chemliFunctionCatalog, chemliToolsCatalog, chemliMetaData } from "./chemli";
+import { regieFunctionCatalog, regieToolsCatalog, regieMetaData } from "./regie";
+import {
+    programmer as chemliProgrammer,
+    solver as chemliSolver,
+    evaluate as chemliEvaluate,
+    regieProgrammer,
+    regieSolver,
+    regieEvaluate,
+} from "@/app/api/reasoning/prompts";
 import { Factory } from "@/app/utils/factory";
 
 export type ReasonContextType = {
