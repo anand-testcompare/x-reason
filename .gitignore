@@ -2,30 +2,50 @@
 
 # dependencies
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.js
 .yarn/install-state.gz
 
-.env
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
+# package manager logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+.env
+
+# testing
+/**/coverage
+
+# next.js
+/.next/
+**/.next/
+/out/
+**/out/
+
+# production
+/build
+**/build
+**/dist
+
+# misc
+.DS_Store
+Thumbs.db
+*.pem
+.eslintcache
+.stylelintcache
+.cache
+
+# IDE settings
+.idea/
+.vscode/
+
+# editor swap files
+*.swp
+*.swo
+*~
 
 # local env files
 .env*.local
