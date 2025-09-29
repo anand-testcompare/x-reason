@@ -13,9 +13,7 @@ import { ArrowUp, ArrowLeft, ArrowRight, Play, Copy, Check, ChevronDown, Chevron
 import Interpreter from "@/app/api/reasoning/Interpreter.v1.headed";
 import { LocalStorage } from "@/app/components";
 import { createMachine, createActor, assign } from 'xstate';
-import { machineMacro } from '@/app/actions/statesMacros';
-import headlessInterpreter from '@/app/api/reasoning/interpreter.v1.headless';
-import { programV1 } from '@/app/api/reasoning';
+import { headlessInterpreter, programV1 } from '@/app/api/reasoning';
 import { safeExtractContent } from '@/app/utils';
 import { initializeInspector } from '@/app/lib/inspector';
 

@@ -1,6 +1,6 @@
 import React, { RefObject, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from 'next/navigation';
-import { createReasoningEngineV2 } from "@/app/api/reasoning/engine.v2";
+import { engineV1 } from "@/app/api/reasoning";
 import { AIConfig } from "@/app/api/ai/providers";
 import { EngineTypes, ReasonDemoActionTypes, useReasonDemoStore, useReasonDemoDispatch } from "@/app/context/ReasoningDemoContext";
 import { DefaultComponent, Success } from "@/app/components/chemli";
@@ -92,7 +92,7 @@ export function useAgentDemo({
     }, [credentials, getInitialProvider]);
 
     // Create reasoning engine with user-selected AI config
-    const reasoningEngine = useMemo(() => createReasoningEngineV2(aiConfig), [aiConfig]);
+    const reasoningEngine = useMemo(() => engineV1, []);
     
     const factoryResult = useMemo(() => {
         if (!context || !factory) return null;

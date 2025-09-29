@@ -5,7 +5,6 @@ import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
 import { Eye, EyeOff, Play, Square, RotateCcw, ExternalLink, GitBranch, Maximize2 } from 'lucide-react';
-import { generateStatelyVizUrl, generateXStateMachineCode } from '@/app/actions/statesMacros';
 import { initializeInspector, isInspectorInitialized } from '@/app/lib/inspector';
 
 interface StateMachineVisualizerProps {
@@ -330,28 +329,20 @@ export function StateMachineVisualizer({
   }, [showGraph, machine, currentState]);
 
   const openInStatelyViz = () => {
-    if (!stepsMap) {
-      return;
-    }
-    
-    try {
-      const vizUrl = generateStatelyVizUrl(stepsMap, machine?.id || 'stateMachine');
-      window.open(vizUrl, '_blank');
-    } catch (error) {
-      console.error('Failed to generate Stately Viz URL:', error);
-    }
+    // Stately Viz functionality removed - use Stately Inspector instead
+    console.warn('Stately Viz URL generation not available without stepsMap');
   };
 
   const copyMachineCode = async () => {
-    if (!stepsMap) {
-      alert('No steps map available for code generation');
+    if (!machine) {
+      alert('No machine available');
       return;
     }
-    
+
     try {
-      const machineCode = generateXStateMachineCode(stepsMap, machine?.id || 'stateMachine');
+      const machineCode = JSON.stringify(machine.config || machine, null, 2);
       await navigator.clipboard.writeText(machineCode);
-      alert('XState machine code copied to clipboard!');
+      alert('Machine config copied to clipboard!');
     } catch (error) {
       console.error('Failed to copy machine code:', error);
       alert('Failed to copy machine code to clipboard');

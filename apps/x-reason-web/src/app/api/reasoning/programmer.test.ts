@@ -1,5 +1,4 @@
-import { interpret } from "xstate";
-import 'openai/shims/node';
+import { createActor } from "xstate";
 
 import { StateConfig, programV1, Context, MachineEvent, Task } from "./";
 
@@ -281,15 +280,15 @@ describe('Testing Programmer', () => {
 
       const result = programV1(stateConfigArray, sampleCatalog);
 
-      const withContext = result.withContext({
-        status: 0,
-        requestId: "test",
-        stack: [],
+      const machineExecution = createActor(result, {
+        input: {
+          status: 0,
+          requestId: "test",
+          stack: [],
+        }
       });
 
-      const machineExecution = interpret(withContext).onTransition((state) => {
-        const type = machineExecution.machine.states[state.value as string]?.meta?.type;
-
+      machineExecution.subscribe((state) => {
         switch (state.value) {
           case "success":
             expect(JSON.stringify(state.context)).toBe(
@@ -315,7 +314,7 @@ describe('Testing Programmer', () => {
                 RegulatoryCheck: "no regulatory issues were found"
               }),
             );
-            expect(machineExecution.machine.context.stack?.length).toBe(6);
+            expect(state.context.stack?.length).toBe(6);
             resolve("success");
             break;
           case "failure":
