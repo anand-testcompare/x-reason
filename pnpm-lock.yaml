@@ -6,7 +6,17 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    devDependencies:
+      '@eslint/eslintrc':
+        specifier: ^3
+        version: 3.3.1
+      eslint:
+        specifier: ^9
+        version: 9.36.0(jiti@1.21.7)
+      eslint-config-next:
+        specifier: latest
+        version: 15.5.4(eslint@9.36.0(jiti@1.21.7))(typescript@5.9.2)
 
   apps/x-reason-web:
     dependencies:

@@ -2,12 +2,17 @@
   "name": "x-reason-monorepo",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@9.12.0",
+  "packageManager": "pnpm@10.17.1",
   "scripts": {
     "dev": "pnpm --filter x-reason dev",
     "build": "pnpm --filter x-reason build",
     "start": "pnpm --filter x-reason start",
     "lint": "pnpm --filter x-reason lint",
     "test": "pnpm --filter x-reason test"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "eslint": "^9",
+    "eslint-config-next": "latest"
   }
 }
