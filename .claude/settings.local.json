@@ -26,7 +26,9 @@
       "mcp__chrome-devtools__evaluate_script",
       "Bash(rm:*)",
       "Bash(pnpm test:*)",
-      "Bash(pnpm outdated:*)"
+      "Bash(pnpm outdated:*)",
+      "Bash(pnpm update:*)",
+      "Bash(pnpm:*)"
     ],
     "deny": []
   }
