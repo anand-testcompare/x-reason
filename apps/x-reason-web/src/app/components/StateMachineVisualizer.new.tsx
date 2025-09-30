@@ -23,9 +23,9 @@ interface StateTransition {
   timestamp: Date;
 }
 
-export function StateMachineVisualizer({ 
-  machine, 
-  interpreter, 
+export function StateMachineVisualizer({
+  machine,
+  interpreter,
   className = "",
   stepsMap,
   inline = false
@@ -49,7 +49,7 @@ export function StateMachineVisualizer({
         const snapshot = interpreter.getSnapshot ? interpreter.getSnapshot() : interpreter;
         const state = snapshot.value || snapshot.state?.value || 'unknown';
         const contextData = snapshot.context || snapshot.state?.context || {};
-        
+
         setCurrentState(typeof state === 'string' ? state : JSON.stringify(state));
         setContext(contextData);
         setIsRunning(snapshot.status === 'running' || !snapshot.done);
@@ -106,7 +106,11 @@ export function StateMachineVisualizer({
       mermaid.initialize({
         startOnLoad: false,
         theme: 'default',
-        securityLevel: 'loose'
+        securityLevel: 'loose',
+        flowchart: {
+          useMaxWidth: true,
+          htmlLabels: true
+        }
       });
       setMermaidInitialized(true);
     }
@@ -114,321 +118,40 @@ export function StateMachineVisualizer({
 
   // Render Mermaid diagram
   useEffect(() => {
-    if (!showGraph || !machine || !mermaidInitialized) return;
+    if (!showGraph || !machine || !mermaidInitialized || !mermaidRef.current) return;
 
     const renderDiagram = async () => {
-      if (!canvasRef.current) return;
+      try {
+        const diagramCode = generateMermaidDiagram();
+        const id = `mermaid-${Date.now()}`;
 
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // Ensure canvas dimensions are set
-      const rect = canvas.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) {
-        // Canvas not visible yet, try again shortly
-        setTimeout(drawGraph, 100);
-        return;
-      }
-
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Get states from machine
-      const states = machine.config?.states || machine.states || {};
-      const stateNames = Object.keys(states).filter(name => !['success', 'failure'].includes(name));
-
-      // Theme colors (using CSS custom properties converted to hex)
-      const themeColors = {
-        primary: '#5ba3c7', // oklch(0.7124 0.0977 186.6761) converted
-        secondary: '#db7093', // oklch(0.7657 0.1276 358.9636) converted
-        muted: '#e8f0f2', // oklch(0.9476 0.0190 192.8095) converted
-        foreground: '#374151', // oklch(0.2795 0.0368 260.0310) converted
-        success: '#10b981', // keep for success state
-        destructive: '#ef4444', // keep for failure state
-        border: '#d1d5db' // oklch(0.8708 0.0470 189.6325) converted
-      };
-
-      // Calculate horizontal layout - fit all states in one row
-      const totalStates = stateNames.length;
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const nodeWidth = 120; // Rectangle width - wider for text
-      const nodeHeight = 60; // Rectangle height - taller for text
-      const horizontalPadding = 140;
-      const spacing = Math.max(150, (canvasWidth - horizontalPadding * 2) / Math.max(totalStates, 1));
-      const startX = horizontalPadding;
-      const centerY = canvasHeight / 2;
-
-      // Draw all transitions based on actual state config
-      stateNames.forEach((stateName, index) => {
-        const stateConfig = states[stateName];
-        const transitions = stateConfig?.on || {};
-        const x1 = startX + index * spacing;
-
-        Object.entries(transitions).forEach(([event, target]) => {
-          // Find target state position
-          const targetIndex = stateNames.indexOf(target as string);
-
-          if (targetIndex !== -1 && targetIndex > index) {
-            // Forward transition to another state
-            const x2 = startX + targetIndex * spacing;
-            const isError = event === 'ERROR';
-
-            ctx.beginPath();
-            ctx.moveTo(x1 + nodeWidth / 2, centerY);
-            ctx.lineTo(x2 - nodeWidth / 2, centerY);
-            ctx.strokeStyle = isError ? themeColors.destructive : themeColors.primary;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Draw arrow head
-            const arrowHeadLength = 10;
-            const arrowHeadAngle = Math.PI / 6;
-
-            ctx.beginPath();
-            ctx.moveTo(x2 - nodeWidth / 2, centerY);
-            ctx.lineTo(
-              x2 - nodeWidth / 2 - arrowHeadLength * Math.cos(arrowHeadAngle),
-              centerY - arrowHeadLength * Math.sin(arrowHeadAngle)
-            );
-            ctx.moveTo(x2 - nodeWidth / 2, centerY);
-            ctx.lineTo(
-              x2 - nodeWidth / 2 - arrowHeadLength * Math.cos(-arrowHeadAngle),
-              centerY - arrowHeadLength * Math.sin(-arrowHeadAngle)
-            );
-            ctx.strokeStyle = isError ? themeColors.destructive : themeColors.primary;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-          }
-        });
-      });
-
-      // Draw arrows to success/failure from states that have those transitions
-      stateNames.forEach((stateName, index) => {
-        const stateConfig = states[stateName];
-        const transitions = stateConfig?.on || {};
-        const x1 = startX + index * spacing;
-
-        Object.entries(transitions).forEach(([event, target]) => {
-          if (target === 'success' || target === 'failure') {
-            const isSuccess = target === 'success';
-            const branchStartX = startX + stateNames.length * spacing + 100;
-
-            // Y positions for final states
-            const successY = centerY - 80;
-            const failureY = centerY + 80;
-            const targetY = isSuccess ? successY : failureY;
-
-            // Draw line from state to final state
-            ctx.beginPath();
-            ctx.moveTo(x1 + nodeWidth / 2, centerY);
-            ctx.lineTo(branchStartX, targetY);
-            ctx.strokeStyle = isSuccess ? themeColors.success : themeColors.destructive;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Arrow head
-            const angle = Math.atan2(targetY - centerY, branchStartX - (x1 + nodeWidth / 2));
-            const arrowHeadLength = 10;
-            ctx.beginPath();
-            ctx.moveTo(branchStartX, targetY);
-            ctx.lineTo(
-              branchStartX - arrowHeadLength * Math.cos(angle - Math.PI/6),
-              targetY - arrowHeadLength * Math.sin(angle - Math.PI/6)
-            );
-            ctx.moveTo(branchStartX, targetY);
-            ctx.lineTo(
-              branchStartX - arrowHeadLength * Math.cos(angle + Math.PI/6),
-              targetY - arrowHeadLength * Math.sin(angle + Math.PI/6)
-            );
-            ctx.strokeStyle = isSuccess ? themeColors.success : themeColors.destructive;
-            ctx.stroke();
-          }
-        });
-      });
-
-      // Draw state nodes as rectangles
-      stateNames.forEach((stateName, index) => {
-        const x = startX + index * spacing - nodeWidth / 2;
-        const y = centerY - nodeHeight / 2;
-
-        // Determine node style based on current state
-        const isCurrentState = currentState === stateName;
-        const fillColor = isCurrentState ? themeColors.primary : themeColors.muted;
-        const strokeColor = isCurrentState ? themeColors.primary : themeColors.border;
-        const textColor = isCurrentState ? '#ffffff' : themeColors.foreground;
-
-        // Draw rounded rectangle
-        const radius = 8;
-        ctx.beginPath();
-        ctx.moveTo(x + radius, y);
-        ctx.lineTo(x + nodeWidth - radius, y);
-        ctx.quadraticCurveTo(x + nodeWidth, y, x + nodeWidth, y + radius);
-        ctx.lineTo(x + nodeWidth, y + nodeHeight - radius);
-        ctx.quadraticCurveTo(x + nodeWidth, y + nodeHeight, x + nodeWidth - radius, y + nodeHeight);
-        ctx.lineTo(x + radius, y + nodeHeight);
-        ctx.quadraticCurveTo(x, y + nodeHeight, x, y + nodeHeight - radius);
-        ctx.lineTo(x, y + radius);
-        ctx.quadraticCurveTo(x, y, x + radius, y);
-        ctx.closePath();
-
-        ctx.fillStyle = fillColor;
-        ctx.fill();
-        ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Draw state name with better text wrapping
-        ctx.fillStyle = textColor;
-        ctx.font = 'bold 9px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        // Maximum characters that can reasonably fit in the node width
-        const maxCharsPerLine = 15;
-
-        // Helper to split camelCase and snake_case text
-        const splitIntoWords = (str: string) => {
-          // Split on capital letters, numbers, underscores, or hyphens
-          const parts = str.split(/(?=[A-Z0-9])|[_-]/).filter(Boolean);
-          return parts;
-        };
-
-        // Helper to measure text width
-        const measureTextWidth = (text: string) => {
-          return ctx.measureText(text).width;
-        };
-
-        const words = splitIntoWords(stateName);
-        const maxPixelWidth = nodeWidth - 12;
-
-        // Check if text fits on one line
-        if (measureTextWidth(stateName) <= maxPixelWidth) {
-          ctx.fillText(stateName, x + nodeWidth / 2, centerY);
-        } else {
-          // Try to split into two lines intelligently
-          let line1 = '';
-          let line2 = '';
-
-          for (let i = 0; i < words.length; i++) {
-            const testLine1 = line1 + words[i];
-
-            // Try to keep line1 under max width
-            if (measureTextWidth(testLine1) <= maxPixelWidth && line1.length < stateName.length / 2) {
-              line1 = testLine1;
-            } else {
-              // Add remaining words to line2
-              line2 += words[i];
-            }
-          }
-
-          // If line2 is too long, truncate it
-          while (measureTextWidth(line2) > maxPixelWidth && line2.length > 3) {
-            line2 = line2.substring(0, line2.length - 1);
-          }
-          if (line2.length < words.slice(words.indexOf(line2.charAt(0))).join('').length) {
-            line2 = line2.substring(0, line2.length - 2) + '..';
-          }
-
-          // If line1 is empty (very long first word), split arbitrarily
-          if (!line1) {
-            const splitPoint = Math.floor(stateName.length / 2);
-            line1 = stateName.substring(0, splitPoint);
-            line2 = stateName.substring(splitPoint);
-
-            if (measureTextWidth(line2) > maxPixelWidth) {
-              line2 = line2.substring(0, maxCharsPerLine - 2) + '..';
-            }
-          }
-
-          ctx.fillText(line1, x + nodeWidth / 2, centerY - 9);
-          ctx.fillText(line2, x + nodeWidth / 2, centerY + 9);
+        // Clear previous content
+        if (mermaidRef.current) {
+          mermaidRef.current.innerHTML = '';
         }
 
-        // Add step number badge in top-left
-        const badgeSize = 16;
-        ctx.fillStyle = isCurrentState ? '#ffffff' : themeColors.primary;
-        ctx.beginPath();
-        ctx.arc(x + badgeSize, y + badgeSize, badgeSize / 2, 0, 2 * Math.PI);
-        ctx.fill();
+        const { svg } = await mermaid.render(id, diagramCode);
 
-        ctx.fillStyle = isCurrentState ? themeColors.primary : '#ffffff';
-        ctx.font = 'bold 9px sans-serif';
-        ctx.fillText((index + 1).toString(), x + badgeSize, y + badgeSize);
-      });
+        if (mermaidRef.current) {
+          mermaidRef.current.innerHTML = svg;
 
-      // Draw final states (success and failure) as rounded rectangles
-      if (stateNames.length > 0) {
-        const branchX = startX + stateNames.length * spacing + 100;
-
-        // Success state
-        const successY = centerY - 80;
-        const isSuccessActive = currentState === 'success';
-
-        const radius = 8;
-        ctx.beginPath();
-        ctx.moveTo(branchX - nodeWidth / 2 + radius, successY);
-        ctx.lineTo(branchX + nodeWidth / 2 - radius, successY);
-        ctx.quadraticCurveTo(branchX + nodeWidth / 2, successY, branchX + nodeWidth / 2, successY + radius);
-        ctx.lineTo(branchX + nodeWidth / 2, successY + nodeHeight - radius);
-        ctx.quadraticCurveTo(branchX + nodeWidth / 2, successY + nodeHeight, branchX + nodeWidth / 2 - radius, successY + nodeHeight);
-        ctx.lineTo(branchX - nodeWidth / 2 + radius, successY + nodeHeight);
-        ctx.quadraticCurveTo(branchX - nodeWidth / 2, successY + nodeHeight, branchX - nodeWidth / 2, successY + nodeHeight - radius);
-        ctx.lineTo(branchX - nodeWidth / 2, successY + radius);
-        ctx.quadraticCurveTo(branchX - nodeWidth / 2, successY, branchX - nodeWidth / 2 + radius, successY);
-        ctx.closePath();
-
-        ctx.fillStyle = isSuccessActive ? themeColors.success : themeColors.muted;
-        ctx.fill();
-        ctx.strokeStyle = themeColors.success;
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        ctx.fillStyle = isSuccessActive ? '#ffffff' : themeColors.foreground;
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('Success', branchX, successY + nodeHeight / 2);
-
-        // Failure state
-        const failureY = centerY + 80;
-        const isFailureActive = currentState === 'failure';
-
-        ctx.beginPath();
-        ctx.moveTo(branchX - nodeWidth / 2 + radius, failureY);
-        ctx.lineTo(branchX + nodeWidth / 2 - radius, failureY);
-        ctx.quadraticCurveTo(branchX + nodeWidth / 2, failureY, branchX + nodeWidth / 2, failureY + radius);
-        ctx.lineTo(branchX + nodeWidth / 2, failureY + nodeHeight - radius);
-        ctx.quadraticCurveTo(branchX + nodeWidth / 2, failureY + nodeHeight, branchX + nodeWidth / 2 - radius, failureY + nodeHeight);
-        ctx.lineTo(branchX - nodeWidth / 2 + radius, failureY + nodeHeight);
-        ctx.quadraticCurveTo(branchX - nodeWidth / 2, failureY + nodeHeight, branchX - nodeWidth / 2, failureY + nodeHeight - radius);
-        ctx.lineTo(branchX - nodeWidth / 2, failureY + radius);
-        ctx.quadraticCurveTo(branchX - nodeWidth / 2, failureY, branchX - nodeWidth / 2 + radius, failureY);
-        ctx.closePath();
-
-        ctx.fillStyle = isFailureActive ? themeColors.destructive : themeColors.muted;
-        ctx.fill();
-        ctx.strokeStyle = themeColors.destructive;
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        ctx.fillStyle = isFailureActive ? '#ffffff' : themeColors.foreground;
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('Failure', branchX, failureY + nodeHeight / 2);
+          // Highlight current state
+          if (currentState) {
+            const stateElements = mermaidRef.current.querySelectorAll(`[id*="${currentState}"]`);
+            stateElements.forEach(el => {
+              (el as HTMLElement).style.fill = '#5ba3c7';
+              (el as HTMLElement).style.stroke = '#4a90a8';
+              (el as HTMLElement).style.strokeWidth = '3px';
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error rendering Mermaid diagram:', error);
       }
     };
 
-    // Call drawGraph with a small delay to ensure DOM is ready
-    setTimeout(drawGraph, 50);
-  }, [showGraph, machine, currentState]);
-
-  const openInStatelyViz = () => {
-    // Stately Viz functionality removed - use Stately Inspector instead
-    console.warn('Stately Viz URL generation not available without stepsMap');
-  };
+    renderDiagram();
+  }, [showGraph, machine, currentState, mermaidInitialized]);
 
   const copyMachineConfig = async () => {
     if (!machine) {
@@ -507,25 +230,24 @@ export function StateMachineVisualizer({
     }
   };
 
+  const openInStatelyViz = () => {
+    // Stately Viz functionality removed - use Stately Inspector instead
+    console.warn('Stately Viz URL generation not available without stepsMap');
+  };
+
   // For inline mode, skip the floating overlay behavior
   if (inline) {
     return (
       <div className={`w-full ${className}`}>
-        {/* Graph Canvas - always visible for inline mode */}
-        <div>
-          <canvas
-            ref={canvasRef}
-            width={1400}
-            height={300}
-            className="border rounded-md w-full"
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #d1d5db',
-              maxWidth: '100%',
-              height: 'auto'
-            }}
-          />
-        </div>
+        {/* Mermaid Diagram Container */}
+        <div
+          ref={mermaidRef}
+          className="border rounded-md w-full p-4 bg-white"
+          style={{
+            minHeight: '200px',
+            border: '1px solid #d1d5db'
+          }}
+        />
 
         {/* Controls for inline mode */}
         <div className="mt-3 flex items-center justify-between">
@@ -595,8 +317,8 @@ export function StateMachineVisualizer({
 
   return (
     <div className={`fixed bottom-4 right-4 w-[800px] z-50 ${className}`}>
-      <Card 
-        className="state-machine-visualizer shadow-xl border-2" 
+      <Card
+        className="state-machine-visualizer shadow-xl border-2"
         style={{
           backgroundColor: '#f9fafb',
           color: '#1f2937',
@@ -607,8 +329,8 @@ export function StateMachineVisualizer({
           boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
         }}
       >
-        <CardHeader 
-          className="pb-3" 
+        <CardHeader
+          className="pb-3"
           style={{
             backgroundColor: '#f9fafb',
             color: '#1f2937',
@@ -617,13 +339,13 @@ export function StateMachineVisualizer({
         >
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle 
+              <CardTitle
                 className="text-sm"
                 style={{ color: '#1f2937' }}
               >
                 State Machine Visualizer
               </CardTitle>
-              <CardDescription 
+              <CardDescription
                 className="text-xs"
                 style={{ color: '#6b7280' }}
               >
@@ -647,9 +369,9 @@ export function StateMachineVisualizer({
             </Button>
           </div>
         </CardHeader>
-        
-        <CardContent 
-          className="space-y-4" 
+
+        <CardContent
+          className="space-y-4"
           style={{
             backgroundColor: '#f9fafb',
             color: '#1f2937'
@@ -657,14 +379,14 @@ export function StateMachineVisualizer({
         >
           {/* Current State */}
           <div>
-            <div 
+            <div
               className="text-xs font-medium mb-1"
               style={{ color: '#6b7280' }}
             >
               Current State
             </div>
-            <Badge 
-              variant={isRunning ? "default" : "secondary"} 
+            <Badge
+              variant={isRunning ? "default" : "secondary"}
               className="text-xs"
               style={{
                 backgroundColor: isRunning ? '#7c3aed' : '#f3f4f6',
@@ -702,7 +424,7 @@ export function StateMachineVisualizer({
                   </>
                 )}
               </Button>
-              
+
               <Button
                 size="sm"
                 variant="outline"
@@ -787,25 +509,23 @@ export function StateMachineVisualizer({
             )}
           </div>
 
-          {/* Graph Canvas */}
+          {/* Mermaid Diagram */}
           {showGraph && (
             <div>
-              <div 
+              <div
                 className="text-xs font-medium mb-1"
                 style={{ color: '#6b7280' }}
               >
                 State Graph
               </div>
-              <canvas
-                ref={canvasRef}
-                width={1400}
-                height={300}
-                className="border rounded-md"
+              <div
+                ref={mermaidRef}
+                className="border rounded-md p-4 bg-white"
                 style={{
-                  backgroundColor: '#ffffff',
+                  minHeight: '200px',
                   border: '1px solid #d1d5db',
                   maxWidth: '100%',
-                  height: 'auto'
+                  overflow: 'auto'
                 }}
               />
             </div>
@@ -833,13 +553,13 @@ export function StateMachineVisualizer({
           {/* Context Preview */}
           {context && Object.keys(context).length > 0 && (
             <div>
-              <div 
+              <div
                 className="text-xs font-medium mb-1"
                 style={{ color: '#6b7280' }}
               >
                 Context
               </div>
-              <div 
+              <div
                 className="text-xs p-2 rounded-md max-h-24 overflow-auto"
                 style={{
                   backgroundColor: '#f3f4f6',
@@ -859,13 +579,13 @@ export function StateMachineVisualizer({
           {/* Machine Config Preview */}
           {machine && (
             <details className="text-xs">
-              <summary 
+              <summary
                 className="cursor-pointer font-medium"
                 style={{ color: '#6b7280' }}
               >
                 Machine Definition
               </summary>
-              <div 
+              <div
                 className="mt-1 p-2 rounded-md max-h-32 overflow-auto"
                 style={{
                   backgroundColor: '#f3f4f6',
@@ -884,7 +604,7 @@ export function StateMachineVisualizer({
 
           {/* No Interpreter Warning */}
           {!interpreter && (
-            <div 
+            <div
               className="text-xs p-2 rounded-md border border-yellow-200"
               style={{
                 backgroundColor: '#fefce8',

@@ -18,23 +18,23 @@ jest.mock('ai', () => ({
   streamText: jest.fn(),
 }));
 
-import { getModelForProvider, getAIModel, AIConfig } from '../api/ai/providers';
+import { getModelForProvider, getAIModel, AIConfig, GEMINI_MODELS, DEFAULT_GEMINI_MODEL, GeminiModel } from '../api/ai/providers';
 
 describe('AI Providers Module', () => {
   describe('getModelForProvider', () => {
     it('should return default model for openai when no model specified', () => {
       const model = getModelForProvider('openai');
-      expect(model).toBe('gpt-4.1-nano');
+      expect(model).toBe('openai/gpt-5-mini');
     });
 
     it('should return default model for gemini when no model specified', () => {
       const model = getModelForProvider('gemini');
-      expect(model).toBe('gemini-2.0-flash');
+      expect(model).toBe('google/gemini-2.0-flash');
     });
 
     it('should return specified model when provided', () => {
-      const model = getModelForProvider('openai', 'gpt-4.1-mini');
-      expect(model).toBe('gpt-4.1-mini');
+      const model = getModelForProvider('openai', 'openai/gpt-4.1-nano');
+      expect(model).toBe('openai/gpt-4.1-nano');
     });
   });
 
@@ -42,28 +42,28 @@ describe('AI Providers Module', () => {
     it('should return openai model instance with correct structure', () => {
       const config: AIConfig = {
         provider: 'openai',
-        model: 'gpt-4.1-nano',
+        model: 'openai/gpt-4.1-nano',
         credentials: { openaiApiKey: 'test-key' }
       };
 
       const model = getAIModel(config);
 
       expect(model).toBeDefined();
-      expect(model.modelId).toBe('gpt-4.1-nano');
+      expect(model.modelId).toBe('openai/gpt-4.1-nano');
       expect(model.provider).toBe('openai');
     });
 
     it('should return gemini model instance with correct structure', () => {
       const config: AIConfig = {
         provider: 'gemini',
-        model: 'gemini-2.0-flash',
+        model: 'google/gemini-2.0-flash',
         credentials: { geminiApiKey: 'test-key' }
       };
 
       const model = getAIModel(config);
 
       expect(model).toBeDefined();
-      expect(model.modelId).toBe('gemini-2.0-flash');
+      expect(model.modelId).toBe('google/gemini-2.0-flash');
       expect(model.provider).toBe('google.generative-ai');
     });
 
@@ -82,6 +82,33 @@ describe('AI Providers Module', () => {
 
       const model = getAIModel(config);
       expect(model).toBeDefined();
+    });
+  });
+
+  describe('Gemini models configuration', () => {
+    it('should include all latest Gemini models', () => {
+      const expectedModels = [
+        'google/gemini-2.0-flash',
+        'google/gemini-2.5-flash-lite',
+        'google/gemini-2.5-flash'
+      ];
+
+      expectedModels.forEach(model => {
+        expect(GEMINI_MODELS[model as GeminiModel]).toBeDefined();
+        expect(GEMINI_MODELS[model as GeminiModel]).toHaveProperty('name');
+        expect(GEMINI_MODELS[model as GeminiModel]).toHaveProperty('description');
+      });
+    });
+
+    it('should have valid default model', () => {
+      expect(GEMINI_MODELS[DEFAULT_GEMINI_MODEL]).toBeDefined();
+      expect(DEFAULT_GEMINI_MODEL).toBe('google/gemini-2.0-flash');
+    });
+
+    it('should have proper model metadata', () => {
+      const model = GEMINI_MODELS['google/gemini-2.0-flash'];
+      expect(model.name).toBe('Gemini 2.0 Flash');
+      expect(model.description).toBe('Latest model, balanced speed and quality');
     });
   });
 });

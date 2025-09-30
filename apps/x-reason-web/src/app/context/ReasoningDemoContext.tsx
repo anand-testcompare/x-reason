@@ -2,7 +2,7 @@
 import { ActionType, makeStore, factory } from "@/app/utils";
 import { MachineEvent, Context, StateConfig, Task, Prompt } from "@/app/api/reasoning";
 import { chemliFunctionCatalog, chemliToolsCatalog, chemliMetaData } from "./chemli";
-import { regieFunctionCatalog, regieToolsCatalog, regieMetaData } from "./regie";
+import { regieFunctionCatalog, regieToolsCatalog, regieMetaData } from "@/app/api/regie/context";
 import {
     programmer as chemliProgrammer,
     solver as chemliSolver,

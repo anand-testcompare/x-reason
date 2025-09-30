@@ -40,7 +40,16 @@
       "Bash(timeout 30 pnpm test)",
       "Bash(npx tsc:*)",
       "Bash(node:*)",
-      "mcp__chrome-devtools__click"
+      "mcp__chrome-devtools__click",
+      "mcp__chrome-devtools__list_pages",
+      "Bash(curl:*)",
+      "Bash(lsof:*)",
+      "mcp__chrome-devtools__wait_for",
+      "Bash(pkill:*)",
+      "Bash(xargs kill:*)",
+      "WebSearch",
+      "WebFetch(domain:ai-sdk.dev)",
+      "mcp__chrome-devtools__select_page"
     ],
     "deny": []
   }

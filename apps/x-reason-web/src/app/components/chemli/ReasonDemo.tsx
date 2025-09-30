@@ -19,7 +19,8 @@ const chemliSubmissionLogic: AgentSubmissionLogic = async ({
     programmer,
     toolsCatalog,
     dispatch,
-    setComponentToRender
+    setComponentToRender,
+    aiConfig
 }) => {
     // Check if required dependencies are available
     if (!solver) {
@@ -46,7 +47,7 @@ const chemliSubmissionLogic: AgentSubmissionLogic = async ({
     const solverResult = await aiChatCompletion([
         { role: 'system', content: prompts.system },
         { role: 'user', content: prompts.user }
-    ]);
+    ], aiConfig);
     console.log("Solver result:", solverResult);
 
     if (!solverResult) {
@@ -68,7 +69,7 @@ const chemliSubmissionLogic: AgentSubmissionLogic = async ({
     const programResultText = await aiChatCompletion([
         { role: 'system', content: programmerPrompts.system },
         { role: 'user', content: programmerPrompts.user }
-    ]);
+    ], aiConfig);
     console.log("Program result text:", programResultText);
 
     // Parse the JSON response (strip markdown code fences if present)

@@ -1,7 +1,7 @@
 import React, { RefObject, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from 'next/navigation';
 import { engineV1 } from "@/app/api/reasoning";
-import { AIConfig } from "@/app/api/ai/providers";
+import { AIConfig, DEFAULT_OPENAI_MODEL, DEFAULT_GEMINI_MODEL, DEFAULT_XAI_MODEL, AIProvider, OpenAIModel, GeminiModel, XAIModel } from "@/app/api/ai/providers";
 import { EngineTypes, ReasonDemoActionTypes, useReasonDemoStore, useReasonDemoDispatch } from "@/app/context/ReasoningDemoContext";
 import { DefaultComponent, Success } from "@/app/components/chemli";
 import { Error } from "@/app/components";
@@ -18,6 +18,7 @@ export interface AgentSubmissionLogic {
         toolsCatalog?: Map<string, unknown>;
         dispatch: (action: unknown) => void;
         setComponentToRender: (component: React.ReactNode) => void;
+        aiConfig: AIConfig;
     }): Promise<void>;
 }
 
@@ -50,18 +51,27 @@ export function useAgentDemo({
     const [componentToRender, setComponentToRender] = useState<React.ReactNode>(null);
     
     // Determine initial provider and model based on available credentials
-    const getInitialProvider = useCallback(() => {
+    const getInitialProvider = useCallback((): AIProvider => {
         if (credentials.openaiApiKey) return 'openai';
         if (credentials.geminiApiKey) return 'gemini';
-        return 'gemini'; // default fallback
+        return 'openai'; // Primary default is now OpenAI
     }, [credentials.openaiApiKey, credentials.geminiApiKey]);
-    
-    const getDefaultModelForProvider = (provider: 'openai' | 'gemini') => {
-        return provider === 'openai' ? 'gpt-4.1-nano' : 'gemini-2.0-flash';
+
+    const getDefaultModelForProvider = (provider: AIProvider): OpenAIModel | GeminiModel | XAIModel => {
+        switch (provider) {
+            case 'openai':
+                return DEFAULT_OPENAI_MODEL;
+            case 'gemini':
+                return DEFAULT_GEMINI_MODEL;
+            case 'xai':
+                return DEFAULT_XAI_MODEL;
+            default:
+                return DEFAULT_OPENAI_MODEL; // Primary default is now OpenAI
+        }
     };
-    
+
     const initialProvider = getInitialProvider();
-    const [aiConfig, setAiConfig] = useState<AIConfig>({ 
+    const [aiConfig, setAiConfig] = useState<AIConfig>({
         provider: initialProvider,
         model: getDefaultModelForProvider(initialProvider),
         credentials: {
@@ -77,7 +87,7 @@ export function useAgentDemo({
     useEffect(() => {
         const newProvider = getInitialProvider();
         const newModel = getDefaultModelForProvider(newProvider);
-        
+
         setAiConfig(prev => ({
             ...prev,
             provider: newProvider,
@@ -169,16 +179,27 @@ export function useAgentDemo({
                 programmer,
                 toolsCatalog: toolsCatalog || undefined,
                 dispatch,
-                setComponentToRender
+                setComponentToRender,
+                aiConfig
             });
         } catch (error) {
             console.error("Error processing query:", error);
-            const errorMessage = error instanceof Error ? (error as Error).message : "An unexpected error occurred";
+            let errorMessage = "An unexpected error occurred";
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            } else if (typeof error === 'object' && error !== null) {
+                const errorObj = error as Record<string, unknown>;
+                if (errorObj.message) {
+                    errorMessage = String(errorObj.message);
+                } else {
+                    errorMessage = JSON.stringify(error);
+                }
+            }
             setComponentToRender(React.createElement(Error, { message: `Error: ${errorMessage}` }));
         } finally {
             setIsLoading(false);
         }
-    }, [reasoningEngine, inputRef, solver, programmer, toolsCatalog, dispatch, submissionLogic, factoryResult]);
+    }, [reasoningEngine, inputRef, solver, programmer, toolsCatalog, dispatch, submissionLogic, factoryResult, aiConfig]);
 
     // State changes handler
     const onStateChanges = useCallback(() => {

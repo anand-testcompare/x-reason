@@ -25,7 +25,8 @@ export function CredentialsProvider({ children }: CredentialsProviderProps) {
   const hasAnyCredentials = true; // Always true since we use server credentials
 
   // Available providers are determined server-side
-  const availableProviders = ['openai', 'gemini'];
+  // All providers accessible via AI_GATEWAY_API_KEY
+  const availableProviders = ['openai', 'gemini', 'xai'];
 
   return (
     <CredentialsContext.Provider value={{

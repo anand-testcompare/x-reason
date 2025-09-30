@@ -9,10 +9,12 @@ import '@testing-library/jest-dom';
 // Remove deprecated text-encoding polyfill - use native Node.js APIs
 // TextEncoder and TextDecoder are available natively in Node.js 11+
 import { TextEncoder, TextDecoder } from 'util';
+import { TransformStream } from 'stream/web';
 
 declare global {
   var TextEncoder: typeof TextEncoder;
   var TextDecoder: typeof TextDecoder;
+  var TransformStream: typeof TransformStream;
   var TestUtils: {
     mockAIResponse: (response: string) => any;
     mockGeminiResponse: (text: string) => any;
@@ -27,6 +29,10 @@ if (typeof global.TextEncoder === 'undefined') {
   global.TextDecoder = TextDecoder as any;
 }
 
+if (typeof global.TransformStream === 'undefined') {
+  global.TransformStream = TransformStream as any;
+}
+
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
@@ -35,11 +41,9 @@ dotenv.config({ path: '.env.local' });
 process.env.NODE_ENV = 'test';
 
 // Mock environment variables for testing
-if (!process.env.GEMINI_API_KEY) {
-  process.env.GEMINI_API_KEY = 'test-gemini-key';
-}
-if (!process.env.OPENAI_API_KEY) {
-  process.env.OPENAI_API_KEY = 'test-openai-key';
+// Set AI_GATEWAY_API_KEY for Gateway-only authentication
+if (!process.env.AI_GATEWAY_API_KEY) {
+  process.env.AI_GATEWAY_API_KEY = 'test-gateway-key';
 }
 
 // Global test utilities
@@ -83,6 +87,24 @@ global.TestUtils = {
 
 // Mock fetch for API calls
 global.fetch = jest.fn() as any;
+
+// Mock Request and Response for Next.js API routes
+if (typeof global.Request === 'undefined') {
+  global.Request = class Request {
+    constructor(public url: string, public init?: any) {}
+  } as any;
+}
+
+if (typeof global.Response === 'undefined') {
+  global.Response = class Response {
+    constructor(public body: any, public init?: any) {}
+    static json(data: any) {
+      return new Response(JSON.stringify(data), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  } as any;
+}
 
 // Mock IntersectionObserver
 global.IntersectionObserver = jest.fn().mockImplementation(() => ({

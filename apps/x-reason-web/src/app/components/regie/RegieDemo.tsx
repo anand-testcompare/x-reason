@@ -24,22 +24,40 @@ const sampleQueries = [
 // Regie-specific submission logic
 const regieSubmissionLogic: AgentSubmissionLogic = async ({
     userQuery,
-    reasoningEngine,
+    reasoningEngine: _reasoningEngine,
     solver,
     programmer,
     toolsCatalog,
     dispatch,
-    setComponentToRender
+    setComponentToRender,
+    aiConfig
 }) => {
-    // Step 1: Check if solver is available
+    // Check if required dependencies are available
     if (!solver) {
-        setComponentToRender(<Error message="Solver not available. Please refresh the page and try again." />);
+        setComponentToRender(<Error message="Solver not initialized. Please refresh the page." />);
         return;
     }
 
-    // Step 2: Get task list from AI solver
+    if (!programmer) {
+        setComponentToRender(<Error message="Programmer not initialized. Please refresh the page." />);
+        return;
+    }
+
+    // Step 1: Get task list from AI solver
     setComponentToRender(<DefaultComponent message="Analyzing your registration requirements..." />);
-    const solverResult = await reasoningEngine.solver.solve(userQuery, solver);
+
+    // Call solver to get prompts
+    const prompts = await solver(userQuery);
+    console.log("Solver prompts generated");
+
+    // Import AI action (dynamic import to avoid client-side bundling)
+    const { aiChatCompletion } = await import("@/app/api/ai/actions");
+
+    // Call AI directly with the prompts
+    const solverResult = await aiChatCompletion([
+        { role: 'system', content: prompts.system },
+        { role: 'user', content: prompts.user }
+    ], aiConfig);
     console.log("Solver result:", solverResult);
 
     if (!solverResult) {
@@ -47,32 +65,49 @@ const regieSubmissionLogic: AgentSubmissionLogic = async ({
         return;
     }
 
-    // Step 3: Check if programmer is available
-    if (!programmer) {
-        setComponentToRender(<Error message="Programmer not available. Please refresh the page and try again." />);
+    // Step 2: Convert task list to state machine
+    setComponentToRender(<DefaultComponent message="Generating state machine for your registration flow..." />);
+
+    // Call programmer to get prompts
+    const programmerPrompts = await programmer(
+        solverResult,
+        JSON.stringify(Array.from(toolsCatalog!.entries()))
+    );
+    console.log("Programmer prompts generated");
+
+    // Call AI directly with the prompts
+    const programResultText = await aiChatCompletion([
+        { role: 'system', content: programmerPrompts.system },
+        { role: 'user', content: programmerPrompts.user }
+    ], aiConfig);
+    console.log("Program result text:", programResultText);
+
+    // Parse the JSON response (strip markdown code fences if present)
+    let programResult;
+    try {
+        let jsonText = programResultText || '[]';
+        // Remove markdown code fences if present
+        jsonText = jsonText.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+        programResult = JSON.parse(jsonText);
+    } catch (e) {
+        console.error("Failed to parse program result:", e);
+        setComponentToRender(<Error message="Unable to parse state machine. Please try again." />);
         return;
     }
-
-    // Step 4: Convert task list to state machine
-    setComponentToRender(<DefaultComponent message="Generating state machine for your registration flow..." />);
-    const programResult = await reasoningEngine.programmer.program(
-        solverResult, 
-        JSON.stringify(Array.from(toolsCatalog!.entries())), 
-        programmer
-    );
-    console.log("Program result:", programResult);
+    console.log("Program result parsed:", programResult);
 
     if (!programResult || !Array.isArray(programResult)) {
         setComponentToRender(<Error message="Unable to generate state machine. Please try again." />);
         return;
     }
 
-    // Step 5: Store the results in state management
+    // Step 3: Store the results in state management
     dispatch({
         type: ReasonDemoActionTypes.SET_STATE,
         value: {
             states: programResult,
             solution: solverResult,
+            query: userQuery,
             currentState: undefined,
             context: undefined,
             event: undefined,

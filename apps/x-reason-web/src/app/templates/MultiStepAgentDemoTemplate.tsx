@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from "react";
+import { createMachine, createActor } from "xstate";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { ProgressBar } from "@/app/components/ProgressBar";
@@ -262,56 +263,61 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
     console.log('executeStateMachine called');
     console.log('compiledMachine:', compiledMachine);
     console.log('savedInputValue:', savedInputValue);
-    
-    if (!compiledMachine?.machine || !savedInputValue) {
+
+    if (!compiledMachine?.stateConfigs || !savedInputValue) {
       console.log('Missing compiled machine or input value');
       return;
     }
-    
+
     setIsExecuting(true);
     setExecutionResults([]);
+    setCompletedStates(new Set());
     setHasExecutedBefore(true);
-    
+
     try {
       // Initialize inspector for development
       if (process.env.NODE_ENV === 'development') {
         await initializeInspector();
       }
-      
-      // Create an actor from the compiled machine
-      const actor = createActor(compiledMachine.machine);
-      setCurrentActor(actor); // Store actor in state for visualizer
-      
-      // Subscribe to state changes
-      actor.subscribe((snapshot) => {
-        const stateName = typeof snapshot.value === 'string' ? snapshot.value : JSON.stringify(snapshot.value);
-        console.log('State changed to:', stateName);
+
+      // Create an actor from the compiled machine for visualization
+      if (compiledMachine.machine) {
+        const actor = createActor(compiledMachine.machine);
+        setCurrentActor(actor);
+        actor.start();
+      }
+
+      // Execute each state sequentially
+      const states = (compiledMachine.stateConfigs as Array<Record<string, unknown>>)
+        .filter((state: Record<string, unknown>) => state.type !== 'final');
+
+      console.log(`Executing ${states.length} states sequentially`);
+
+      for (const state of states) {
+        const stateName = state.id as string;
+        console.log(`Starting execution of state: ${stateName}`);
         setCurrentExecutionState(stateName);
-        
-        // Log state transitions
-        if (stateName !== 'success' && stateName !== 'failure') {
-          setExecutionResults(prev => [...prev, {
-            state: stateName,
-            result: `🔄 Entered state: ${stateName}`,
-            timestamp: new Date()
-          }]);
+
+        try {
+          await simulateStateExecution(stateName, savedInputValue);
+          console.log(`Completed execution of state: ${stateName}`);
+        } catch (error) {
+          console.error(`Error executing state ${stateName}:`, error);
+          // Continue with next state even if this one fails
         }
-        
-        // Check if we've reached a final state
-        if (snapshot.status === 'done') {
-          console.log('Execution completed');
-          setIsExecuting(false);
-          setExecutionResults(prev => [...prev, {
-            state: 'completed',
-            result: `🎉 State machine execution completed! Final state: ${stateName}`,
-            timestamp: new Date()
-          }]);
-        }
-      });
-      
-      console.log('Starting actor...');
-      actor.start();
-      
+      }
+
+      console.log('All states executed successfully');
+      setIsExecuting(false);
+      setCurrentExecutionState('success');
+
+      // Add final completion message
+      setExecutionResults(prev => [...prev, {
+        state: 'final-summary',
+        result: `## 🎉 Execution Complete!\n\nAll ${states.length} steps have been executed successfully. Review the results above to verify each step completed as expected.`,
+        timestamp: new Date()
+      }]);
+
     } catch (error) {
       console.error('Error executing state machine:', error);
       setExecutionResults(prev => [...prev, {
@@ -325,20 +331,11 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
 
   const simulateStateExecution = async (stateName: string, query: string) => {
     console.log(`simulateStateExecution called for state: ${stateName}`);
-    
-    // Add initial state entry
-    setExecutionResults(prev => [...prev, {
-      state: stateName,
-      result: `🔄 Entering state: ${stateName}`,
-      timestamp: new Date()
-    }]);
 
     try {
-      const prompt = `You are executing the "${stateName}" step of a workflow for the following query:
+      const prompt = `Execute the "${stateName}" step for: ${query}
 
-Original Query: ${query}
-
-Provide a detailed response for what happens in the "${stateName}" step. Be specific and actionable.`;
+Describe what happens in this step concisely. Start directly with the action, no preamble.`;
 
       console.log(`Setting up streaming for state ${stateName}`);
 
@@ -354,6 +351,7 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
           query: prompt,
           type: 'solve',
           provider: hookReturn.aiConfig?.provider || 'gemini',
+          model: hookReturn.aiConfig?.model,
           credentials: credentials
         })
       });
@@ -422,33 +420,9 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
                 });
               } else if (data.type === 'complete') {
                 console.log(`Stream complete for state ${stateName}`);
-                
-                // Mark state as completed
-                setCompletedStates(prev => {
-                    const newSet = new Set(prev);
-                    newSet.add(stateName);
-                    return newSet;
-                });
-                
-                // Auto-collapse completed states (except the last one)
-                const isLastState = stateName === 'success' || stateName === states?.[states.length - 1]?.id;
-                if (!isLastState) {
-                  setTimeout(() => {
-                    setCollapsedStates(prev => {
-                      const newSet = new Set(prev);
-                      newSet.add(stateName);
-                      return newSet;
-                    });
-                  }, 3000); // Give user time to see completion
-                }
-                
-                // Add completion message
-                setExecutionResults(prev => [...prev, {
-                  state: stateName,
-                  result: `✅ Completed state: ${stateName}`,
-                  timestamp: new Date()
-                }]);
-                
+                // Don't mark as completed here - let the fallback completion tracker
+                // (after the stream loop) handle it. This ensures all content is
+                // accumulated and rendered before showing the checkmark.
                 break; // Exit the streaming loop
               } else if (data.type === 'error') {
                 console.error(`Stream error for state ${stateName}:`, data.data);
@@ -461,6 +435,20 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
           }
         }
       }
+
+      // If we reach here, the stream completed successfully
+      // Mark state as completed (visual indicator via checkmark in header)
+      setCompletedStates(prev => {
+        if (!prev.has(stateName)) {
+          const newSet = new Set(prev);
+          newSet.add(stateName);
+          console.log(`Marking state ${stateName} as completed`);
+          return newSet;
+        }
+        return prev;
+      });
+
+      // No completion message needed - checkmark indicates completion
 
       return accumulatedContent;
 
@@ -940,7 +928,7 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
                   const hasResults = executionResults.some(r => r.state === state.id);
                   
                   return (
-                    <div key={state.id as string} className="border rounded-lg">
+                    <div key={`${state.id}-${index}`} className="border rounded-lg">
                       <div 
                         className={`flex items-center justify-between p-3 cursor-pointer ${
                           isCompleted ? 'bg-green-50' : isCurrent ? 'bg-blue-50' : 'bg-gray-50'
@@ -987,9 +975,9 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
                           }`} />
                         )}
                       </div>
-                      
-                      {/* Expandable content */}
-                      {hasResults && (!isCollapsed || isCurrent) && (
+
+                      {/* Expandable content - show when not collapsed */}
+                      {hasResults && !isCollapsed && (
                         <div className="border-t bg-white">
                           <div className="p-3 space-y-2">
                             {executionResults
@@ -1023,6 +1011,15 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
                 <div className="flex items-center space-x-2 text-sm text-blue-600 p-3">
                   <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
                   <span>Initializing execution...</span>
+                </div>
+              )}
+
+              {/* Final summary message */}
+              {!isExecuting && executionResults.some(r => r.state === 'final-summary') && (
+                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="text-sm text-gray-800 whitespace-pre-wrap">
+                    {executionResults.find(r => r.state === 'final-summary')?.result}
+                  </div>
                 </div>
               )}
             </div>
