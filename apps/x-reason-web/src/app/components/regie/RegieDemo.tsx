@@ -1,0 +1,177 @@
+"use client";
+
+import { useRef } from "react";
+import { EngineTypes, ReasonDemoActionTypes } from "@/app/context/ReasoningDemoContext";
+import { DefaultComponent, Success } from "@/app/components/chemli";
+import { Error } from "@/app/components";
+import { 
+    MultiStepAgentDemoTemplate, 
+    AgentConfig,
+    useAgentDemo,
+    AgentSubmissionLogic 
+} from "@/app/templates";
+
+// Sample registration queries to help users understand what Regie can do
+const sampleQueries = [
+    "I want to register for the free tier with no extras",
+    "I'd like to sign up for the premium plan with all features",
+    "Register me for the plus tier but skip partner plugins",
+    "I'm a returning visitor, show me special offers for the premium plan",
+    "Quick signup for free tier, I don't want to see extras",
+    "I want the most expensive plan with all the bells and whistles"
+];
+
+// Regie-specific submission logic
+const regieSubmissionLogic: AgentSubmissionLogic = async ({
+    userQuery,
+    reasoningEngine: _reasoningEngine,
+    solver,
+    programmer,
+    toolsCatalog,
+    dispatch,
+    setComponentToRender,
+    aiConfig
+}) => {
+    // Check if required dependencies are available
+    if (!solver) {
+        setComponentToRender(<Error message="Solver not initialized. Please refresh the page." />);
+        return;
+    }
+
+    if (!programmer) {
+        setComponentToRender(<Error message="Programmer not initialized. Please refresh the page." />);
+        return;
+    }
+
+    // Step 1: Get task list from AI solver
+    setComponentToRender(<DefaultComponent message="Analyzing your registration requirements..." />);
+
+    // Call solver to get prompts
+    const prompts = await solver(userQuery);
+    console.log("Solver prompts generated");
+
+    // Import streaming utility
+    const { generateAICompletion } = await import("@/app/utils/streamAI");
+
+    // Call server-side API route (using non-streaming for now, can be changed to streaming)
+    const solverResult = await generateAICompletion({
+        messages: [
+            { role: 'system', content: prompts.system },
+            { role: 'user', content: prompts.user }
+        ],
+        aiConfig,
+        onError: (error) => {
+            console.error("Solver API error:", error);
+            setComponentToRender(<Error message={`API Error: ${error.message}`} />);
+        }
+    });
+    console.log("Solver result:", solverResult);
+
+    if (!solverResult) {
+        setComponentToRender(<Error message="Unable to analyze your request. Please try rephrasing." />);
+        return;
+    }
+
+    // Step 2: Convert task list to state machine
+    setComponentToRender(<DefaultComponent message="Generating state machine for your registration flow..." />);
+
+    // Call programmer to get prompts
+    const programmerPrompts = await programmer(
+        solverResult,
+        JSON.stringify(Array.from(toolsCatalog!.entries()))
+    );
+    console.log("Programmer prompts generated");
+
+    // Call server-side API route (using non-streaming for now, can be changed to streaming)
+    const programResultText = await generateAICompletion({
+        messages: [
+            { role: 'system', content: programmerPrompts.system },
+            { role: 'user', content: programmerPrompts.user }
+        ],
+        aiConfig,
+        onError: (error) => {
+            console.error("Programmer API error:", error);
+            setComponentToRender(<Error message={`API Error: ${error.message}`} />);
+        }
+    });
+    console.log("Program result text:", programResultText);
+
+    // Parse the JSON response (strip markdown code fences if present)
+    let programResult;
+    try {
+        let jsonText = programResultText || '[]';
+        // Remove markdown code fences if present
+        jsonText = jsonText.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+        programResult = JSON.parse(jsonText);
+    } catch (e) {
+        console.error("Failed to parse program result:", e);
+        setComponentToRender(<Error message="Unable to parse state machine. Please try again." />);
+        return;
+    }
+    console.log("Program result parsed:", programResult);
+
+    if (!programResult || !Array.isArray(programResult)) {
+        setComponentToRender(<Error message="Unable to generate state machine. Please try again." />);
+        return;
+    }
+
+    // Step 3: Store the results in state management
+    dispatch({
+        type: ReasonDemoActionTypes.SET_STATE,
+        value: {
+            states: programResult,
+            solution: solverResult,
+            query: userQuery,
+            currentState: undefined,
+            context: undefined,
+            event: undefined,
+        }
+    });
+
+    setComponentToRender(<Success message="Registration flow generated successfully! Check the state machine visualization below to see your personalized registration steps." />);
+};
+
+// Regie agent configuration
+const regieConfig: AgentConfig = {
+    name: "Regie",
+    title: "I am Regie, the AI powered user registration system.",
+    description: "Tell me your registration preferences and I'll create a customized multi-step flow with validation, plan selection, and confirmation.",
+    icon: "🤖",
+    placeholder: "Describe your registration preferences...",
+    submitButtonText: "Generate Registration Flow",
+    processingButtonText: "Generating Registration Flow...",
+    sampleQueries,
+    layout: 'grid',
+    features: {
+        expandableView: true,
+        jsonHighlighting: true,
+        sampleQueries: true,
+        copyStates: true,
+        contextDisplay: true,
+        solutionDisplay: true,
+    }
+};
+
+export function RegieDemo() {
+    const inputRef = useRef<HTMLTextAreaElement>(null);
+    const stateRef = useRef<HTMLTextAreaElement>(null);
+    
+    const hookReturn = useAgentDemo({
+        config: regieConfig,
+        inputRef,
+        stateRef,
+        submissionLogic: regieSubmissionLogic,
+        defaultEngineType: EngineTypes.REGIE,
+        enableExpandableView: true,
+        enableCopyStates: true
+    });
+
+    return (
+        <MultiStepAgentDemoTemplate 
+            config={regieConfig}
+            hookReturn={hookReturn}
+            inputRef={inputRef}
+            stateRef={stateRef}
+        />
+    );
+} 

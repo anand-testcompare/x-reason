@@ -1,8 +1,9 @@
-/** @type {import('tailwindcss').Config} */
-module.exports = {
+import type { Config } from 'tailwindcss';
+
+const config: Config = {
   content: [
-    './apps/x-reason-web/src/**/*.{js,ts,jsx,tsx,mdx}',
-    './packages/**/src/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/**/*.{js,ts,jsx,tsx,mdx}',
+    '../../packages/x-reason/src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
@@ -60,5 +61,6 @@ module.exports = {
     require('@tailwindcss/forms'),
     require('@tailwindcss/typography')
   ],
-}
+};
 
+export default config;
