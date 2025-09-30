@@ -50,14 +50,21 @@ const regieSubmissionLogic: AgentSubmissionLogic = async ({
     const prompts = await solver(userQuery);
     console.log("Solver prompts generated");
 
-    // Import AI provider (dynamic import to avoid client-side bundling)
-    const { aiChatCompletion } = await import("@/app/api/ai/providers");
+    // Import streaming utility
+    const { generateAICompletion } = await import("@/app/utils/streamAI");
 
-    // Call AI directly with the prompts
-    const solverResult = await aiChatCompletion([
-        { role: 'system', content: prompts.system },
-        { role: 'user', content: prompts.user }
-    ], aiConfig);
+    // Call server-side API route (using non-streaming for now, can be changed to streaming)
+    const solverResult = await generateAICompletion({
+        messages: [
+            { role: 'system', content: prompts.system },
+            { role: 'user', content: prompts.user }
+        ],
+        aiConfig,
+        onError: (error) => {
+            console.error("Solver API error:", error);
+            setComponentToRender(<Error message={`API Error: ${error.message}`} />);
+        }
+    });
     console.log("Solver result:", solverResult);
 
     if (!solverResult) {
@@ -75,11 +82,18 @@ const regieSubmissionLogic: AgentSubmissionLogic = async ({
     );
     console.log("Programmer prompts generated");
 
-    // Call AI directly with the prompts
-    const programResultText = await aiChatCompletion([
-        { role: 'system', content: programmerPrompts.system },
-        { role: 'user', content: programmerPrompts.user }
-    ], aiConfig);
+    // Call server-side API route (using non-streaming for now, can be changed to streaming)
+    const programResultText = await generateAICompletion({
+        messages: [
+            { role: 'system', content: programmerPrompts.system },
+            { role: 'user', content: programmerPrompts.user }
+        ],
+        aiConfig,
+        onError: (error) => {
+            console.error("Programmer API error:", error);
+            setComponentToRender(<Error message={`API Error: ${error.message}`} />);
+        }
+    });
     console.log("Program result text:", programResultText);
 
     // Parse the JSON response (strip markdown code fences if present)

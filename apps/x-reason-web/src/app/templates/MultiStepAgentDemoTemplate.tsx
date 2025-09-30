@@ -844,12 +844,12 @@ Describe what happens in this step concisely. Start directly with the action, no
           )}
         </div>
 
-        <div className="flex justify-between">
-          <Button onClick={handleBack} variant="outline" size="lg">
+        <div className="flex flex-col sm:flex-row justify-between gap-2">
+          <Button onClick={handleBack} variant="outline" size="lg" className="w-full sm:w-auto">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-          <Button onClick={handleProceed} size="lg" className="min-w-[200px]">
+          <Button onClick={handleProceed} size="lg" className="w-full sm:w-auto sm:min-w-[200px]">
             <Play className="mr-2 h-4 w-4" />
             Execute
           </Button>
@@ -1026,32 +1026,32 @@ Describe what happens in this step concisely. Start directly with the action, no
           </div>
         </div>
 
-        <div className="flex justify-between">
-          <Button onClick={handleBack} variant="outline" size="lg">
+        <div className="flex flex-col sm:flex-row justify-between gap-2">
+          <Button onClick={handleBack} variant="outline" size="lg" className="w-full sm:w-auto">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Visualization
           </Button>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             {!isExecuting && (
-              <Button 
-                onClick={executeStateMachine} 
-                size="lg" 
-                className={hasExecutedBefore ? "bg-gray-500 hover:bg-gray-600" : "bg-green-600 hover:bg-green-700"}
+              <Button
+                onClick={executeStateMachine}
+                size="lg"
+                className={`w-full sm:w-auto ${hasExecutedBefore ? "bg-gray-500 hover:bg-gray-600" : "bg-green-600 hover:bg-green-700"}`}
               >
                 <Play className="mr-2 h-4 w-4" />
                 {hasExecutedBefore ? 'Re-execute' : 'Execute'}
               </Button>
             )}
-            <Button 
+            <Button
               onClick={downloadMarkdownReport}
-              variant="outline" 
+              variant="outline"
               size="lg"
               disabled={!executionResults.length || isExecuting}
-              className={!executionResults.length || isExecuting ? "opacity-50 cursor-not-allowed" : ""}
+              className={`w-full sm:w-auto ${!executionResults.length || isExecuting ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               📄 Download Report
             </Button>
-            <Button onClick={() => setCurrentStep(0)} variant="outline" size="lg">
+            <Button onClick={() => setCurrentStep(0)} variant="outline" size="lg" className="w-full sm:w-auto">
               Start New Task
             </Button>
           </div>

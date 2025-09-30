@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAIModel, getModelForProvider, AIConfig, AIMessage } from "../providers";
-import { streamText } from 'ai';
+import { streamText, generateText } from 'ai';
 import { AILogger } from "../../../utils/aiLogger";
 
 export async function POST(request: NextRequest) {
@@ -57,7 +57,24 @@ export async function POST(request: NextRequest) {
       content: msg.content,
     }));
 
-    // Use Vercel AI SDK's streamText
+    // Handle non-streaming requests
+    if (!stream) {
+      const startTime = Date.now();
+      const result = await generateText({
+        model: aiModel,
+        messages: coreMessages,
+      });
+
+      const duration = Date.now() - startTime;
+      AILogger.logResponse(provider, actualModel, result.text, duration, requestId);
+
+      return new Response(
+        JSON.stringify({ text: result.text }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use Vercel AI SDK's streamText for streaming requests
     const result = streamText({
       model: aiModel,
       messages: coreMessages,
