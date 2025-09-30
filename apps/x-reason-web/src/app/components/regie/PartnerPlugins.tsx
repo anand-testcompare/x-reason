@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "@/app/components/ui/button";
 import { Checkbox } from "@/app/components/ui/checkbox";
 import { Label } from "@/app/components/ui/label";
@@ -9,7 +9,7 @@ export default function PartnerPlugins() {
     const dispatch = useReasonDemoDispatch();
     const [checked, setChecked] = useState(false);
 
-    function onChange() {
+    function _onChange() {
         setChecked(!checked);
     }
 

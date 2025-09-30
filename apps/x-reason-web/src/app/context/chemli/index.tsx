@@ -1,8 +1,13 @@
-import { LabTesting, ExpertReview, Success, RecallSolution, UnsafeQuestion, UnsupportedQuestion, DefaultComponent } from "@/app/components/chemli";
-import { Context, MachineEvent, Task, engineV1 as engine } from "@/app/api/reasoning";
+import { Context, MachineEvent, Task } from "@/app/api/reasoning";
 import { ReasonDemoActionTypes } from "@/app/context/ReasoningDemoContext";
 import { ActionType } from "@/app/utils";
 import { programmer, solver, evaluate } from "@/app/api/reasoning/prompts";
+import RecallSolution from "@/app/components/chemli/RecallSolution";
+import DefaultComponent from "@/app/components/chemli/Default";
+import ExpertReview from "@/app/components/chemli/ExpertReview";
+import LabTesting from "@/app/components/chemli/LabTesting";
+import UnsupportedQuestion from "@/app/components/chemli/UnsupportedQuestion";
+import UnsafeQuestion from "@/app/components/chemli/UnsafeQuestion";
 
 function getFunctionCatalog(dispatch: (action: ActionType) => void) {
     return new Map<string, Task>([
@@ -12,8 +17,8 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
                 description:
                     "Recalls a similar solution to the user query. If a solution is found it will set the existingSolutionFound attribute of the event params to true: `event.payload?.params.existingSolutionFound`",
                 // this is an example of a visual state that requires user interaction
-                component: (context: Context, event?: MachineEvent) => <RecallSolution />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <RecallSolution />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('RecallSolutions implementation called');
                 },
             },
@@ -23,8 +28,8 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description: "Generates a list of ingredients for a product formula",
                 // this is an example of how you can render a component while the implementation function executes
-                component: (context: Context, event?: MachineEvent) => <DefaultComponent message="Getting the ingredients list..." />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <DefaultComponent message="Getting the ingredients list..." />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('GenerateIngredientsList implementation called');
                     setTimeout(() => {
                         // TODO all real implementation
@@ -46,8 +51,8 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Maintain a comprehensive database of cosmetic ingredients, their properties, potential combinations, and effects. This database includes natural and synthetic ingredients, their usual concentrations in products, and regulatory information.",
-                component: (context: Context, event?: MachineEvent) => <DefaultComponent message="Searching the ingredients database..." />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <DefaultComponent message="Searching the ingredients database..." />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     setTimeout(() => {
                         // TODO all real implementation
                         const currentList = context.GenerateIngredientsList || [];
@@ -62,14 +67,14 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
                         });
                     }, 5000);
                 },
-                transitions: new Map<"CONTINUE" | "ERROR", (context: Context, event: MachineEvent) => boolean>([
+                transitions: new Map<"CONTINUE" | "ERROR", (_context: Context, _event: MachineEvent) => boolean>([
                     [
                         "CONTINUE",
                         // this is an example of a deterministic function that is invoked as part of evaluating transitions
                         // it can do whatever you like and take into account the current state of the world found on the context
                         // The results of the implementation function should be include included in the payload of the incoming event
                         // in this case payload.IngredientDatabase
-                        (context: Context, event: MachineEvent) => event.payload?.IngredientDatabase?.length > 0
+                        (_context: Context, _event: MachineEvent) => event.payload?.IngredientDatabase?.length > 0
                     ]
                 ]),
             },
@@ -79,7 +84,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Ensure that the predicted formula adheres to relevant cosmetic regulations and standards. If this function has an error it will set `context.regulatoryChecksSuccess` to false.",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     setTimeout(() => {
                         // TODO all real implementation
                         dispatch({
@@ -100,7 +105,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Estimate the concentration of each ingredient based on standard industry practices, known effects, and regulatory limits. If this function has an error it will set `context.concentrationEstimationSuccess` to false.",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     setTimeout(() => {
                         // TODO all real implementation
                         dispatch({
@@ -127,7 +132,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             "FormulationSimulation",
             {
                 description: "Use simulation models to predict how different ingredients interact. This includes stability, texture, and efficacy simulations.",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     setTimeout(() => {
                         // TODO all real implementation
                         dispatch({
@@ -144,8 +149,8 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             "ExpertReview",
             {
                 description: "Have cosmetic chemists review the proposed formula for feasibility and safety.",
-                component: (context: Context, event?: MachineEvent) => <ExpertReview />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <ExpertReview />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('ExpertReview Invoked');
                 },
             },
@@ -154,8 +159,8 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             "LabTesting",
             {
                 description: "Test the proposed formula in a laboratory setting to verify its properties and efficacy.",
-                component: (context: Context, event?: MachineEvent) => <LabTesting />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <LabTesting />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('LabTesting Invoked');
                 },
             },
@@ -164,7 +169,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             "Evaluation",
             {
                 description: "Evaluates a generated product formula and rates the result",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     setTimeout(() => {
                         // TODO all real implementation
                         dispatch({
@@ -182,7 +187,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Generate the manufacturing steps for a tested and evaluated formula",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     setTimeout(() => {
                         // TODO all real implementation
                         dispatch({
@@ -199,7 +204,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             "MarketResearch",
             {
                 description: "Performs market research for the new product",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     setTimeout(() => {
                         // TODO all real implementation
                         dispatch({
@@ -216,7 +221,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             "CreateMarketing",
             {
                 description: "Generates a product description for target customers",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     setTimeout(() => {
                         // TODO all real implementation
                         dispatch({
@@ -233,7 +238,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             "GenerateProductImage",
             {
                 description: "generates a product image using the generated product description",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     setTimeout(() => {
                         // TODO all real implementation
                         dispatch({
@@ -251,8 +256,8 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Default state to display for unsupported questions",
-                component: (context: Context, event?: MachineEvent) => <UnsupportedQuestion />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <UnsupportedQuestion />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('UnsupportedQuestion implementation called');
                 }
             },
@@ -262,8 +267,8 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Default state to display for unsafe questions",
-                component: (context: Context, event?: MachineEvent) => <UnsafeQuestion />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <UnsafeQuestion />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('UnsafeQuestion implementation called');
                 },
             },

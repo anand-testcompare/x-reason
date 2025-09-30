@@ -48,7 +48,7 @@ export function safeExtractContent(rawContent: string): string {
     
     // If parsed but no recognizable content field, return original
     return rawContent;
-  } catch (error) {
+  } catch (_error) {
     // JSON parsing failed, return original content
     return rawContent;
   }

@@ -14,7 +14,7 @@ import {
 import { Factory } from "@/app/utils/factory";
 
 export type ReasonContextType = {
-    callback?: (event: MachineEvent) => void,
+    callback?: (_event: MachineEvent) => void,
     query?: string,
     solution?: string,
     states?: StateConfig[],
@@ -34,14 +34,14 @@ export type ReasonContextType = {
 };
 
 const appInitialState: ReasonContextType = {
-    callback: (event: MachineEvent) => console.log("default callback called"),
+    callback: (_event: MachineEvent) => console.log("default callback called"),
     states: [],
     context: {
         requestId: "",
         status: 0
     },
     factory: factory({
-        chemli: (context: any) => {
+        chemli: (_context: any) => {
             return {
                 programmer: chemliProgrammer,
                 solver: chemliSolver,
@@ -51,7 +51,7 @@ const appInitialState: ReasonContextType = {
                 getMetadata: chemliMetaData,
             };
         },
-        regie: (context: any) => {
+        regie: (_context: any) => {
             // TODO
             return {
                 programmer: regieProgrammer,

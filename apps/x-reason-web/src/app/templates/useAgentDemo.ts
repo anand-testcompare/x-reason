@@ -46,8 +46,6 @@ export function useAgentDemo({
     const { states, currentState, context, solution, functions, factory } = useReasonDemoStore();
     const dispatch = useReasonDemoDispatch();
     const { credentials } = useCredentials();
-    
-    const [query, setQuery] = useState<string>();
     const [isLoading, setIsLoading] = useState(false);
     const [componentToRender, setComponentToRender] = useState<React.ReactNode>(null);
     
@@ -106,12 +104,10 @@ export function useAgentDemo({
     
     const programmer = factoryResult?.programmer;
     const solver = factoryResult?.solver;
-    const evaluate = factoryResult?.evaluate;
     const getFunctionCatalog = factoryResult?.getFunctionCatalog;
     const getToolsCatalog = factoryResult?.getToolsCatalog;
-    const getMetadata = factoryResult?.getMetadata;
 
-    const sampleCatalog = useMemo(
+    const _sampleCatalog = useMemo(
         () => getFunctionCatalog ? getFunctionCatalog(dispatch) : null,
         [dispatch, getFunctionCatalog],
     );
@@ -148,7 +144,6 @@ export function useAgentDemo({
     // Main submission logic
     const onSubmit = useCallback(async () => {
         setIsLoading(true);
-        setQuery(inputRef.current?.value || "");
         setComponentToRender(React.createElement(DefaultComponent, { message: "Processing your request..." }));
 
         const userQuery = inputRef.current?.value;

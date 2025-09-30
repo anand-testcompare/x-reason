@@ -8,4 +8,3 @@ export { MainContent } from "./MainContent";
 export { NavigationProvider } from "./NavigationWrapper";
 export { InspectorInitializer } from "./InspectorInitializer";
 export { CredentialsWrapper } from "./CredentialsWrapper";
-export { CredentialsModal } from "./CredentialsModal";

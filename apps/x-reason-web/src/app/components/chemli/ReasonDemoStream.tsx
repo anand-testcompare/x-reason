@@ -1,6 +1,6 @@
 "use client";
 
-import { RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Textarea } from "@/app/components/ui/textarea";
@@ -31,7 +31,7 @@ function useStreamingLogic({ ref, stateRef }: { ref: RefObject<HTMLTextAreaEleme
     const [componentToRender, setComponentToRender] = useState(() => (<div></div>));
     const [streamingContent, setStreamingContent] = useState<string>('');
     const [progressMessage, setProgressMessage] = useState<string>('');
-    const { programmer, solver, evaluate, getFunctionCatalog, getToolsCatalog, getMetadata } = useMemo(() => factory(engineType)(context!), [factory, context, engineType]);
+    const { programmer, solver: _solver, evaluate, getFunctionCatalog, getToolsCatalog, getMetadata } = useMemo(() => factory(engineType)(context!), [factory, context, engineType]);
 
     const sampleCatalog = useMemo(
         () => getFunctionCatalog(dispatch),
@@ -185,12 +185,12 @@ export default function ReasonDemoStream() {
     const ref = useRef<HTMLTextAreaElement>(null);
     const stateRef = useRef<HTMLTextAreaElement>(null);
 
-    const { 
-        query, 
-        solution, 
-        states, 
-        functions, 
-        onSubmit, 
+    const {
+        query: _query,
+        solution,
+        states,
+        functions,
+        onSubmit,
         isLoading, 
         componentToRender, 
         currentState, 

@@ -1,10 +1,18 @@
 "use client";
 
 import { useCallback } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator, SelectLabel, SelectGroup } from "./select";
-import { Label } from "./label";
 import { AIConfig, OpenAIModel, GeminiModel } from "../../api/ai/providers";
 import { useCredentials } from "../../context/CredentialsContext";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "./select";
 
 interface AIProviderSelectorProps {
   config: AIConfig;

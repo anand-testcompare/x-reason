@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
-import { ArrowRight, Brain, Workflow, Database, Code2, Terminal, ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Brain, Workflow, Database } from 'lucide-react';
 import { EngineTypes } from './context/ReasoningDemoContext';
 
 export default function Home() {

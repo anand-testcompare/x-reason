@@ -1,13 +1,14 @@
-import { useCallback, useMemo } from "react";
+
+import { useCallback } from "react";
 import { Button } from "@/app/components/ui/button";
 
 import { useReasonDemoStore, useReasonDemoDispatch, ReasonDemoActionTypes } from "@/app/context/ReasoningDemoContext";
 import { FormulaTable } from ".";
 
 export default function ExpertReview() {
-    const { states, currentState, query, solution, context } = useReasonDemoStore();
+    const { states: _states, currentState: _currentState, query: _query, solution: _solution, context } = useReasonDemoStore();
     const dispatch = useReasonDemoDispatch();
-    const onNext = useCallback(async (sampleRecalledSolution: string) => {
+    const onNext = useCallback(async (_sampleRecalledSolution: string) => {
         const payload = {
             ExpertReview: 'TODO serialize the edited table',
         };
@@ -70,9 +71,9 @@ export default function ExpertReview() {
         return csv;
     }, []);
 
-    const sampleRecalledSolution = JSON.parse(context?.RecallSolutions || {});
+    const _sampleRecalledSolution = JSON.parse(context?.RecallSolutions || {});
 
-    const item = sampleRecalledSolution;
+    const item = _sampleRecalledSolution;
     const phases = item.phases || item;
     const csv = migratePhasesToCSV(phases);
     const formula = {
@@ -92,7 +93,7 @@ export default function ExpertReview() {
         <p>
             Using the recalled solution will trigger a different path.
         </p>
-        <Button onClick={() => onNext(sampleRecalledSolution)} variant="default">
+        <Button onClick={() => onNext(_sampleRecalledSolution)} variant="default">
             Submit
         </Button>
     </div>)

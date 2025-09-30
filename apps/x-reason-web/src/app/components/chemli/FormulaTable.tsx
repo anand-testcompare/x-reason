@@ -6,7 +6,7 @@ import { Input } from "@/app/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/app/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/app/components/ui/tooltip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
-import { Trash2, Plus, Undo, Redo, Eraser } from "lucide-react";
+import { Trash2, Plus, Undo, Redo } from "lucide-react";
 
 export interface IFormula {
   title?: string;
@@ -70,7 +70,7 @@ export default function FormulaTable(props: IRenderFormulaProps) {
   const [redoStack, setRedoStack] = useState([] as string[][][]);
   const [tableData, setTableData] = useState<string[][]>([]);
   const activeFormula = props.table;
-  const formulaIsLoading = false;
+  const _formulaIsLoading = false;
 
   const tableReference: any = useRef(null);
 
@@ -80,7 +80,7 @@ export default function FormulaTable(props: IRenderFormulaProps) {
     }
   }, [activeFormula?.table]);
 
-  let formula: IFormula = activeFormula ?? ({} as IFormula);
+  const formula: IFormula = activeFormula ?? ({} as IFormula);
 
   if (!tableData || tableData.length === 0) {
     return <div>No table data available</div>;
@@ -133,7 +133,7 @@ export default function FormulaTable(props: IRenderFormulaProps) {
     }
   }
 
-  function clearCell(rowIndex: number, colIndex: number): void {
+  function _clearCell(rowIndex: number, colIndex: number): void {
     const oldTable = deepCopy(tableData);
     const newTable = deepCopy(tableData);
     newTable[rowIndex][colIndex] = "";

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, RefObject, useRef } from "react";
+import React, { ReactNode } from "react";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Textarea } from "@/app/components/ui/textarea";
@@ -11,7 +11,6 @@ import { StateMachineVisualizer } from "@/app/components/StateMachineVisualizer"
 import { LocalStorage } from "@/app/components";
 import { AIConfig } from "@/app/api/ai/providers";
 import { Copy, ChevronDown, ChevronRight, Check, ArrowUp } from 'lucide-react';
-import React from "react"; // Added missing import for React
 
 // Shared UI Components
 export const LoadingSpinner = () => (
@@ -42,7 +41,7 @@ export const JsonHighlighter = ({ json, className = "" }: { json: string; classN
                 .replace(/:\s*(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)(?=\s*[,\}\]])/g, ': <span style="color: #ff6600;">$1</span>')
                 .replace(/([{}[\]])/g, '<span style="color: #666; font-weight: bold;">$1</span>')
                 .replace(/(,)$/gm, '<span style="color: #666; font-weight: bold;">$1</span>');
-        } catch (e) {
+        } catch (_e) {
             return json;
         }
     })() : '';

@@ -32,9 +32,9 @@ export function StateMachineVisualizer({
   const [isVisible, setIsVisible] = useState(inline);
   const [currentState, setCurrentState] = useState<string>('');
   const [context, setContext] = useState<any>({});
-  const [history, setHistory] = useState<StateTransition[]>([]);
+  const [_history, setHistory] = useState<StateTransition[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-  const [inspectorEnabled, setInspectorEnabled] = useState(false);
+  const [_inspectorEnabled, setInspectorEnabled] = useState(false);
   const [showGraph, setShowGraph] = useState(inline);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 

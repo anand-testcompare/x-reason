@@ -1,10 +1,10 @@
 import { AcceptTOS, AgeConfirmation, PartnerPlugins, RegisterUser, SelectPlan, SpecialOffers } from "@/app/components/regie";
-import { Context, MachineEvent, Task, engineV1 as engine } from "@/app/api/reasoning";
+import { Context, MachineEvent, Task } from "@/app/api/reasoning";
 import { ActionType } from "@/app/utils";
 import { regieProgrammer, regieSolver, regieEvaluate } from "@/app/api/reasoning/prompts";
 import { UnsafeQuestion, UnsupportedQuestion } from "@/app/components/chemli";
 
-function getFunctionCatalog(dispatch: (action: ActionType) => void) {
+function getFunctionCatalog(_dispatch: (action: ActionType) => void) {
     return new Map<string, Task>([
         [
             "AcceptTOS",
@@ -12,18 +12,18 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
                 description:
                     "Required step that allows the user to accept or reject the terms of service",
                 // this is an example of a visual state that requires user interaction
-                component: (context: Context, event?: MachineEvent) => <AcceptTOS />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <AcceptTOS />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('AcceptTOS implementation called');
                 },
-                transitions: new Map<"CONTINUE" | "ERROR", (context: Context, event: MachineEvent) => boolean>([
+                transitions: new Map<"CONTINUE" | "ERROR", (_context: Context, event: MachineEvent) => boolean>([
                     [
                         "CONTINUE",
                         // this is an example of a deterministic function that is invoked as part of evaluating transitions
                         // it can do whatever you like and take into account the current state of the world found on the context
                         // The results of the implementation function should be include included in the payload of the incoming event
                         // in this case we verify the user accepted the TOS
-                        (context: Context, event: MachineEvent) => event.payload?.AcceptTOS?.accepted
+                        (_context: Context, event: MachineEvent) => event.payload?.AcceptTOS?.accepted
                     ]
                 ]),
             },
@@ -33,18 +33,18 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description: "Required step that allows the user to confirm they are at least 18 years of age",
                 // this is an example of how you can render a component while the implementation function executes
-                component: (context: Context, event?: MachineEvent) => <AgeConfirmation />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <AgeConfirmation />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('AgeConfirmation implementation called');
                 },
-                transitions: new Map<"CONTINUE" | "ERROR", (context: Context, event: MachineEvent) => boolean>([
+                transitions: new Map<"CONTINUE" | "ERROR", (_context: Context, event: MachineEvent) => boolean>([
                     [
                         "CONTINUE",
                         // this is an example of a deterministic function that is invoked as part of evaluating transitions
                         // it can do whatever you like and take into account the current state of the world found on the context
                         // The results of the implementation function should be include included in the payload of the incoming event
                         // in this case we verify the user is at least 18
-                        (context: Context, event: MachineEvent) => event.payload?.AgeConfirmation?.confirmed
+                        (_context: Context, event: MachineEvent) => event.payload?.AgeConfirmation?.confirmed
                     ]
                 ]),
             },
@@ -54,8 +54,8 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Optional step allows the user to select partner plugins they can sign up for",
-                component: (context: Context, event?: MachineEvent) => <PartnerPlugins />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <PartnerPlugins />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('PartnerPlugins implementation called');
                 },
             },
@@ -65,8 +65,8 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Required step to collect the users personal information",
-                component: (context: Context, event?: MachineEvent) => <RegisterUser />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <RegisterUser />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('RegisterUser implementation called');
                 },
             },
@@ -76,8 +76,8 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Required step that allows the user to select the subscription tier they would like",
-                component: (context: Context, event?: MachineEvent) => <SelectPlan />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <SelectPlan />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('SelectPlan implementation called');
                 },
             },
@@ -86,8 +86,8 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             "SpecialOffers",
             {
                 description: "Optional step that allows the user to select the special offers they would like",
-                component: (context: Context, event?: MachineEvent) => <SpecialOffers />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <SpecialOffers />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('SpecialOffers implementation called');
                 },
             },
@@ -97,8 +97,8 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Default state to display for unsupported questions",
-                component: (context: Context, event?: MachineEvent) => <UnsupportedQuestion />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <UnsupportedQuestion />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('UnsupportedQuestion implementation called');
                 }
             },
@@ -108,8 +108,8 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Default state to display for unsafe questions",
-                component: (context: Context, event?: MachineEvent) => <UnsafeQuestion />,
-                implementation: (context: Context, event?: MachineEvent) => {
+                component: (_context: Context, _event?: MachineEvent) => <UnsafeQuestion />,
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('UnsafeQuestion implementation called');
                 },
             },

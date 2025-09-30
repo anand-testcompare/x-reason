@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useReducer, createServerContext } from "react";
+import React, { createContext, useContext, useReducer } from "react";
 
 export const APP_CONTEXT_IDENTIFIER = Symbol.for("appContext");
 
@@ -24,7 +24,7 @@ type PropsType<S> = {
 };
 
 export function makeStore<S, A>(initialState: S, reducer: ReducerType<S, A>): [(props: PropsType<S>) => JSX.Element, () => DispatchType<A>, () => S] {
-  const dispatchContext = createContext((action: A) => { });
+  const dispatchContext = createContext((_action: A) => { });
   const storeContext = createContext<S>(initialState);
 
   const StoreProvider = ({ children, initialState: propsInitialState }: PropsType<S>) => {

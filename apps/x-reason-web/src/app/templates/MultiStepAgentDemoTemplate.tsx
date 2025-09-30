@@ -1,19 +1,18 @@
 'use client'
 
-import { ReactNode, RefObject, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { ProgressBar } from "@/app/components/ProgressBar";
 import { StateMachineVisualizer } from "@/app/components/StateMachineVisualizer";
-import { AgentDemoTemplateProps, LoadingSpinner, ResponsiveContainer, SampleQueries, JsonHighlighter } from "./AgentDemoTemplate";
+import { AgentDemoTemplateProps, ResponsiveContainer, SampleQueries, JsonHighlighter } from "./AgentDemoTemplate";
 import { Textarea } from "@/app/components/ui/textarea";
 import { AIProviderSelector } from "@/app/components/ui/ai-provider-selector";
 import { useCredentials } from "@/app/context/CredentialsContext";
-import { ArrowUp, ArrowLeft, ArrowRight, Play, Copy, Check, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
+import { ArrowUp, ArrowLeft, ArrowRight, Play, Copy, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import Interpreter from "@/app/api/reasoning/Interpreter.v1.headed";
 import { LocalStorage } from "@/app/components";
-import { createMachine, createActor, assign } from 'xstate';
-import { headlessInterpreter, programV1 } from '@/app/api/reasoning';
+import { programV1 } from '@/app/api/reasoning';
 import { safeExtractContent } from '@/app/utils';
 import { initializeInspector } from '@/app/lib/inspector';
 
@@ -86,8 +85,10 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
         console.log('Attempting fallback compilation...');
         
         const stepsMap = new Map();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         states.forEach((state: any) => {
-          const stepFunction = (context: any, event: any) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const stepFunction = (context: any, _event: any) => {
             console.log(`Executing step: ${state.id}`);
             
             // Add execution result to our UI
@@ -138,12 +139,14 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
       if (states) {
         // Create a proper function map for all states
         const functionsMap = new Map();
-        
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         states.forEach((state: any) => {
           // Skip final states as they don't need implementations
           if (state.type === 'final') return;
-          
-          const stepFunction = (context: any, event: any) => {
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const stepFunction = (context: any, _event: any) => {
             console.log(`Executing step: ${state.id}`);
             
             // Add execution result to our UI
