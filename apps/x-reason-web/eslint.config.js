@@ -23,6 +23,7 @@ const config = [
       "*.config.ts",
       "jest.setup.ts",
       "next-env.d.ts",
+      "test-*.ts",
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
@@ -35,7 +36,7 @@ const config = [
       },
     },
     rules: {
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": [
         "error",
         {

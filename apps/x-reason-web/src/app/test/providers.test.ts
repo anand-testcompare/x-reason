@@ -69,7 +69,7 @@ describe('AI Providers Module', () => {
 
     it('should throw error for unsupported provider', () => {
       const config: AIConfig = {
-        provider: 'invalid' as any,
+        provider: 'invalid' as 'openai' | 'gemini',
       };
 
       expect(() => getAIModel(config)).toThrow('Unsupported AI provider: invalid');

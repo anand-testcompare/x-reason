@@ -8,7 +8,7 @@ import { Label } from '@/app/components/ui/label';
 import { ReasonDemoActionTypes, useReasonDemoStore, useReasonDemoDispatch } from "@/app/context/ReasoningDemoContext";
 
 // Create a new item or update an existing item in localStorage
-const saveToLocalStorage = (key: string, value: any) => {
+const saveToLocalStorage = (key: string, value: string) => {
     localStorage.setItem(`x-reason-${key}`, value);
 };
 

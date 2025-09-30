@@ -8,10 +8,10 @@ import { Eye, EyeOff, Play, Square, RotateCcw, ExternalLink, GitBranch, Maximize
 import { initializeInspector, isInspectorInitialized } from '@/app/lib/inspector';
 
 interface StateMachineVisualizerProps {
-  machine: any;
-  interpreter?: any;
+  machine: unknown;
+  interpreter?: unknown;
   className?: string;
-  stepsMap?: Map<string, {id: string, func: any, type?: 'pause' | 'async'}>;
+  stepsMap?: Map<string, {id: string, func: unknown, type?: 'pause' | 'async'}>;
   inline?: boolean;
 }
 
@@ -31,7 +31,7 @@ export function StateMachineVisualizer({
 }: StateMachineVisualizerProps) {
   const [isVisible, setIsVisible] = useState(inline);
   const [currentState, setCurrentState] = useState<string>('');
-  const [context, setContext] = useState<any>({});
+  const [context, setContext] = useState<Record<string, unknown>>({});
   const [_history, setHistory] = useState<StateTransition[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [_inspectorEnabled, setInspectorEnabled] = useState(false);

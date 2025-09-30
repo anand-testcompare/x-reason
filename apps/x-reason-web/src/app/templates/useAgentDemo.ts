@@ -12,11 +12,11 @@ import { useCredentials } from "@/app/context/CredentialsContext";
 export interface AgentSubmissionLogic {
     (params: {
         userQuery: string;
-        reasoningEngine: any;
-        solver: any;
-        programmer?: any;
-        toolsCatalog?: Map<string, any>;
-        dispatch: any;
+        reasoningEngine: unknown;
+        solver: unknown;
+        programmer?: unknown;
+        toolsCatalog?: Map<string, unknown>;
+        dispatch: (action: unknown) => void;
         setComponentToRender: (component: React.ReactNode) => void;
     }): Promise<void>;
 }

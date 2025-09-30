@@ -30,7 +30,7 @@ export type ReasonContextType = {
         getFunctionCatalog: (dispatch: (action: ActionType) => void) => Map<string, Task>,
         getToolsCatalog: () => Map<string, { description: string }>
     }>;
-    [key: string]: any;
+    [key: string]: unknown;
 };
 
 const appInitialState: ReasonContextType = {
@@ -41,7 +41,7 @@ const appInitialState: ReasonContextType = {
         status: 0
     },
     factory: factory({
-        chemli: (_context: any) => {
+        chemli: (_context: Context) => {
             return {
                 programmer: chemliProgrammer,
                 solver: chemliSolver,
@@ -51,7 +51,7 @@ const appInitialState: ReasonContextType = {
                 getMetadata: chemliMetaData,
             };
         },
-        regie: (_context: any) => {
+        regie: (_context: Context) => {
             // TODO
             return {
                 programmer: regieProgrammer,
@@ -62,7 +62,14 @@ const appInitialState: ReasonContextType = {
                 getMetadata: regieMetaData,
             };
         },
-    }) as any,
+    }) as Factory<Context, {
+        programmer: Prompt,
+        solver: Prompt,
+        evaluate: Prompt,
+        getMetadata: () => { title: string, description: string },
+        getFunctionCatalog: (dispatch: (action: ActionType) => void) => Map<string, Task>,
+        getToolsCatalog: () => Map<string, { description: string }>
+    }>,
 }
 
 export enum ReasonDemoActionTypes {

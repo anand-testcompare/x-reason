@@ -5,12 +5,12 @@ export type Context = {
   status: number;
   stack?: string[];
   // Index signature for additional properties
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export type MachineEvent = {
   type: "PAUSE_EXECUTION" | "RESUME_EXECUTION" | "RETRY" | "INVOKE" | string;
-  payload?: { [key: string]: any };
+  payload?: { [key: string]: unknown };
 } & EventObject;
 
 export type Transition = Map<"CONTINUE" | "ERROR", (context: Context, event: MachineEvent) => boolean>;
@@ -23,7 +23,7 @@ export type Task = {
 };
 
 export interface StateMachineConfig {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export type Solver = {
@@ -61,7 +61,7 @@ export type AiTransition = {
   transition(taskList: string, currentState: string, stateValue: string, aiTransition: Prompt): Promise<string>;
 };
 
-export type Prompt = (...args: any[]) => Promise<{ user: string; system: string; }>
+export type Prompt = (...args: unknown[]) => Promise<{ user: string; system: string; }>
 
 export type ReasoningEngine = {
   solver: Solver;
@@ -71,7 +71,7 @@ export type ReasoningEngine = {
 };
 
 export interface ICallable {
-  (...args: any[]): any;
+  (...args: unknown[]): unknown;
 }
 
 export type InterpreterInput = {

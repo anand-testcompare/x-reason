@@ -302,7 +302,7 @@ export default function ReasonDemoStream() {
                 stepsMap={states ? (() => {
                     // Convert states object to stepsMap format
                     const stepsMap = new Map();
-                    Object.entries(states || {}).forEach(([key, value]: [string, any]) => {
+                    Object.entries(states || {}).forEach(([key, value]: [string, unknown]) => {
                         if (key !== 'success' && key !== 'failure') {
                             stepsMap.set(key, {
                                 id: key,

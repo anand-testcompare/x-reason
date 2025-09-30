@@ -30,7 +30,7 @@ describe('Chat API Route', () => {
     const mockStreamText = streamText as jest.MockedFunction<typeof streamText>;
     mockStreamText.mockResolvedValue({
       toDataStreamResponse: jest.fn(() => new Response('mock response')),
-    } as any);
+    } as ReturnType<typeof streamText>);
 
     const requestBody = {
       messages: [{ role: 'user', content: 'Hello' }],
@@ -57,7 +57,7 @@ describe('Chat API Route', () => {
     const mockStreamText = streamText as jest.MockedFunction<typeof streamText>;
     mockStreamText.mockResolvedValue({
       toDataStreamResponse: jest.fn(() => new Response('mock response')),
-    } as any);
+    } as ReturnType<typeof streamText>);
 
     const requestBody = {
       messages: [{ role: 'user', content: 'Hello' }],
@@ -86,7 +86,7 @@ describe('Chat API Route', () => {
 
     mockStreamText.mockResolvedValue({
       toDataStreamResponse: jest.fn(() => ({ body: mockResponseBody })),
-    } as any);
+    } as ReturnType<typeof streamText>);
 
     const { getAIModel } = await import('../api/ai/providers');
     const model = getAIModel({ provider: 'openai' });

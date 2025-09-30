@@ -14,7 +14,7 @@ import {
 // Chemli-specific submission logic
 const chemliSubmissionLogic: AgentSubmissionLogic = async ({
     userQuery,
-    reasoningEngine,
+    reasoningEngine: _reasoningEngine,
     solver,
     programmer,
     toolsCatalog,

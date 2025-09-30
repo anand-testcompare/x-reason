@@ -3,7 +3,7 @@ interface LogEntry {
   provider: string;
   model: string;
   action: 'request' | 'response' | 'error' | 'metrics' | 'state_transition';
-  data?: any;
+  data?: Record<string, unknown>;
   duration?: number;
 }
 
@@ -106,7 +106,7 @@ export class AILogger {
     console.log(''); // Empty line for readability
   }
 
-  static logRequest(provider: string, model: string, messages: any[], requestId?: string): void {
+  static logRequest(provider: string, model: string, messages: Array<Record<string, unknown>>, requestId?: string): void {
     this.log({
       timestamp: this.formatTimestamp(),
       provider,
@@ -140,7 +140,7 @@ export class AILogger {
     }
   }
 
-  static logError(provider: string, model: string, error: any, requestId?: string): void {
+  static logError(provider: string, model: string, error: Error | unknown, requestId?: string): void {
     this.log({
       timestamp: this.formatTimestamp(),
       provider,
@@ -165,7 +165,7 @@ export class AILogger {
   static logMetrics(
     provider: string,
     model: string,
-    metrics: Record<string, any>,
+    metrics: Record<string, unknown>,
     requestId: string
   ): void {
     this.log({
@@ -182,7 +182,7 @@ export class AILogger {
     toState: string,
     event: string,
     requestId: string,
-    context?: any
+    context?: Record<string, unknown>
   ): void {
     this.log({
       timestamp: this.formatTimestamp(),
@@ -193,22 +193,22 @@ export class AILogger {
     });
   }
 
-  private static estimateTokens(messages: any[]): number {
+  private static estimateTokens(messages: Array<Record<string, unknown>>): number {
     // Rough token estimation (actual tokenization would require specific tokenizer)
     const text = messages.map(m => m.content || '').join(' ');
     return Math.ceil(text.length / 4); // Approximate tokens
   }
 
   // Utility methods for structured logging
-  static info(message: string, data?: any): void {
+  static info(message: string, data?: Record<string, unknown>): void {
     console.log(`ℹ️ [INFO] ${message}`, data ? JSON.stringify(data) : '');
   }
 
-  static warn(message: string, data?: any): void {
+  static warn(message: string, data?: Record<string, unknown>): void {
     console.warn(`⚠️ [WARN] ${message}`, data ? JSON.stringify(data) : '');
   }
 
-  static debug(message: string, data?: any): void {
+  static debug(message: string, data?: Record<string, unknown>): void {
     if (process.env.NODE_ENV === 'development') {
       console.log(`🐛 [DEBUG] ${message}`, data ? JSON.stringify(data) : '');
     }

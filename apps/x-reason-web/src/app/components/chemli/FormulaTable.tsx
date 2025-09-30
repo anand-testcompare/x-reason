@@ -72,7 +72,7 @@ export default function FormulaTable(props: IRenderFormulaProps) {
   const activeFormula = props.table;
   const _formulaIsLoading = false;
 
-  const tableReference: any = useRef(null);
+  const tableReference = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (activeFormula?.table) {
@@ -273,7 +273,7 @@ export default function FormulaTable(props: IRenderFormulaProps) {
                     >
                       <Input
                         value={header}
-                        onChange={(e) => updateCellValue(0, index, e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCellValue(0, index, e.target.value)}
                         className="border-none bg-transparent font-medium"
                       />
                     </TableHead>
@@ -296,7 +296,7 @@ export default function FormulaTable(props: IRenderFormulaProps) {
                         <TableCell key={colIndex}>
                           <Input
                             value={cell}
-                            onChange={(e) => updateCellValue(actualRowIndex, colIndex, e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCellValue(actualRowIndex, colIndex, e.target.value)}
                             className="border-none bg-transparent"
                           />
                         </TableCell>

@@ -25,7 +25,7 @@ const STEPS = [
 export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: AgentDemoTemplateProps) {
   const { credentials } = useCredentials();
   const [currentStep, setCurrentStep] = useState(0);
-  const [compiledMachine, setCompiledMachine] = useState<any>(null);
+  const [compiledMachine, setCompiledMachine] = useState<Record<string, unknown> | null>(null);
   const [executionResults, setExecutionResults] = useState<Array<{state: string, result: string, timestamp: Date}>>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [currentExecutionState, setCurrentExecutionState] = useState<string>('');
@@ -33,7 +33,7 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
   const [collapsedStates, setCollapsedStates] = useState<Set<string>>(new Set());
   const [savedInputValue, setSavedInputValue] = useState<string>('');
   const [hasExecutedBefore, setHasExecutedBefore] = useState(false);
-  const [currentActor, setCurrentActor] = useState<any>(null);
+  const [currentActor, setCurrentActor] = useState<Record<string, unknown> | null>(null);
   const [copyConfigSuccess, setCopyConfigSuccess] = useState(false);
   
   const {
@@ -83,40 +83,38 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
         console.error('Error creating machine:', error);
         // Fallback to simpler approach if programV1 fails
         console.log('Attempting fallback compilation...');
-        
-        const stepsMap = new Map();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        states.forEach((state: any) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const stepFunction = (context: any, _event: any) => {
-            console.log(`Executing step: ${state.id}`);
-            
+
+        const stepsMap = new Map<string, Record<string, unknown>>();
+        (states as Array<Record<string, unknown>>).forEach((state: Record<string, unknown>) => {
+          const stepFunction = (context: Record<string, unknown>, _event: Record<string, unknown>) => {
+            console.log(`Executing step: ${state.id as string}`);
+
             // Add execution result to our UI
             setExecutionResults(prev => [...prev, {
-              state: state.id,
-              result: `🔄 Executing ${state.id}...`,
+              state: state.id as string,
+              result: `🔄 Executing ${state.id as string}...`,
               timestamp: new Date()
             }]);
-            
+
             // Simulate the AI execution for this step and send CONTINUE event
-            simulateStateExecution(state.id, savedInputValue || inputRef.current?.value || '')
+            simulateStateExecution(state.id as string, savedInputValue || inputRef.current?.value || '')
               .then(() => {
                 // Send the CONTINUE event to transition to next state
                 if (context.actor) {
-                  console.log(`Sending CONTINUE event from ${state.id}`);
-                  context.actor.send({ type: 'CONTINUE' });
+                  console.log(`Sending CONTINUE event from ${state.id as string}`);
+                  (context.actor as Record<string, unknown>).send({ type: 'CONTINUE' });
                 }
               })
               .catch((error) => {
-                console.error(`Error in state ${state.id}, sending ERROR event:`, error);
+                console.error(`Error in state ${state.id as string}, sending ERROR event:`, error);
                 if (context.actor) {
-                  context.actor.send({ type: 'ERROR', error });
+                  (context.actor as Record<string, unknown>).send({ type: 'ERROR', error });
                 }
               });
           };
-          
-          stepsMap.set(state.id, {
-            id: state.id,
+
+          stepsMap.set(state.id as string, {
+            id: state.id as string,
             implementation: stepFunction
           });
         });
@@ -138,43 +136,41 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
       
       if (states) {
         // Create a proper function map for all states
-        const functionsMap = new Map();
+        const functionsMap = new Map<string, Record<string, unknown>>();
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        states.forEach((state: any) => {
+        (states as Array<Record<string, unknown>>).forEach((state: Record<string, unknown>) => {
           // Skip final states as they don't need implementations
           if (state.type === 'final') return;
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const stepFunction = (context: any, _event: any) => {
-            console.log(`Executing step: ${state.id}`);
-            
+          const stepFunction = (context: Record<string, unknown>, _event: Record<string, unknown>) => {
+            console.log(`Executing step: ${state.id as string}`);
+
             // Add execution result to our UI
             setExecutionResults(prev => [...prev, {
-              state: state.id,
-              result: `🔄 Executing ${state.id}...`,
+              state: state.id as string,
+              result: `🔄 Executing ${state.id as string}...`,
               timestamp: new Date()
             }]);
-            
+
             // Simulate the AI execution for this step and send CONTINUE event
-            simulateStateExecution(state.id, savedInputValue || inputRef.current?.value || '')
+            simulateStateExecution(state.id as string, savedInputValue || inputRef.current?.value || '')
               .then(() => {
                 // Send the CONTINUE event to transition to next state
                 if (context.actor) {
-                  console.log(`Sending CONTINUE event from ${state.id}`);
-                  context.actor.send({ type: 'CONTINUE' });
+                  console.log(`Sending CONTINUE event from ${state.id as string}`);
+                  (context.actor as Record<string, unknown>).send({ type: 'CONTINUE' });
                 }
               })
               .catch((error) => {
-                console.error(`Error in state ${state.id}, sending ERROR event:`, error);
+                console.error(`Error in state ${state.id as string}, sending ERROR event:`, error);
                 if (context.actor) {
-                  context.actor.send({ type: 'ERROR', error });
+                  (context.actor as Record<string, unknown>).send({ type: 'ERROR', error });
                 }
               });
           };
-          
-          functionsMap.set(state.id, {
-            id: state.id,
+
+          functionsMap.set(state.id as string, {
+            id: state.id as string,
             func: stepFunction,
             implementation: stepFunction
           });
@@ -184,21 +180,21 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
         
         try {
           // Create a simple state machine config manually
-          const stateConfigs: Record<string, any> = {};
-          const initialState = states[0]?.id;
-          
-          states.forEach((state: any, index: number) => {
+          const stateConfigs: Record<string, Record<string, unknown>> = {};
+          const initialState = (states as Array<Record<string, unknown>>)[0]?.id as string | undefined;
+
+          (states as Array<Record<string, unknown>>).forEach((state: Record<string, unknown>, index: number) => {
             if (state.type === 'final') {
-              stateConfigs[state.id] = { type: 'final' };
+              stateConfigs[state.id as string] = { type: 'final' };
             } else {
-              const nextState = states[index + 1]?.id || 'success';
-              stateConfigs[state.id] = {
-                entry: ({ context, event, self }: any) => {
+              const nextState = (states as Array<Record<string, unknown>>)[index + 1]?.id as string || 'success';
+              stateConfigs[state.id as string] = {
+                entry: ({ context, event, self }: Record<string, unknown>) => {
                   console.log(`Entering state: ${state.id}`);
-                  const func = functionsMap.get(state.id)?.func;
+                  const func = (functionsMap.get(state.id as string) as Record<string, unknown>)?.func as ((ctx: Record<string, unknown>, evt: Record<string, unknown>) => void) | undefined;
                   if (func) {
                     // Pass self (the actor) in the context
-                    func({ ...context, actor: self }, event);
+                    func({ ...context as Record<string, unknown>, actor: self }, event as Record<string, unknown>);
                   }
                 },
                 on: {
@@ -481,7 +477,7 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
 
   const generateMarkdownReport = () => {
     const timestamp = new Date().toLocaleString();
-    const totalSteps = compiledMachine?.stateConfigs?.filter((s: any) => s.type !== 'final').length || 0;
+    const totalSteps = (compiledMachine?.stateConfigs as Array<Record<string, unknown>> | undefined)?.filter((s: Record<string, unknown>) => s.type !== 'final').length || 0;
     const completedSteps = completedStates.size;
     
     let markdown = `# State Machine Execution Report\n\n`;
@@ -490,32 +486,32 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
     markdown += `**Progress:** ${completedSteps}/${totalSteps} steps completed\n\n`;
     
     // Group results by state
-    const stateGroups = new Map();
+    const stateGroups = new Map<string, Array<{state: string, result: string, timestamp: Date}>>();
     executionResults.forEach(result => {
       if (!stateGroups.has(result.state)) {
         stateGroups.set(result.state, []);
       }
-      stateGroups.get(result.state).push(result);
+      stateGroups.get(result.state)!.push(result);
     });
-    
+
     // Generate markdown for each state
-    compiledMachine?.stateConfigs
-      ?.filter((state: any) => state.type !== 'final')
-      ?.forEach((state: any, index: number) => {
-        const isCompleted = completedStates.has(state.id);
+    (compiledMachine?.stateConfigs as Array<Record<string, unknown>> | undefined)
+      ?.filter((state: Record<string, unknown>) => state.type !== 'final')
+      ?.forEach((state: Record<string, unknown>, index: number) => {
+        const isCompleted = completedStates.has(state.id as string);
         const status = isCompleted ? '✅ Completed' : '⏳ Pending';
-        
-        markdown += `## ${index + 1}. ${state.id} ${status}\n\n`;
-        
-        const stateResults = stateGroups.get(state.id) || [];
-        const contentResults = stateResults.filter((r: any) => 
-          !r.result.startsWith('🔄') && 
-          !r.result.startsWith('✅') && 
+
+        markdown += `## ${index + 1}. ${state.id as string} ${status}\n\n`;
+
+        const stateResults = stateGroups.get(state.id as string) || [];
+        const contentResults = stateResults.filter((r: {state: string, result: string, timestamp: Date}) =>
+          !r.result.startsWith('🔄') &&
+          !r.result.startsWith('✅') &&
           !r.result.startsWith('❌')
         );
-        
+
         if (contentResults.length > 0) {
-          contentResults.forEach((result: any) => {
+          contentResults.forEach((result: {state: string, result: string, timestamp: Date}) => {
             markdown += `${safeExtractContent(result.result)}\n\n`;
           });
         } else if (isCompleted) {
@@ -786,14 +782,14 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
               <div className="flex-1 p-4">
                 {(() => {
                   // Convert functions map to stepsMap format for visualization
-                  const stepsMap = new Map();
+                  const stepsMap = new Map<string, Record<string, unknown>>();
                   if (compiledMachine.functions) {
-                    compiledMachine.functions.forEach((func: any, key: string) => {
-                      const stateConfig = compiledMachine.stateConfigs?.find((s: any) => s.id === key);
+                    (compiledMachine.functions as Map<string, unknown>).forEach((func: unknown, key: string) => {
+                      const stateConfig = (compiledMachine.stateConfigs as Array<Record<string, unknown>>)?.find((s: Record<string, unknown>) => s.id === key);
                       stepsMap.set(key, {
                         id: key,
                         func: func,
-                        type: stateConfig?.meta?.type || 'async'
+                        type: ((stateConfig as Record<string, unknown>)?.meta as Record<string, unknown>)?.type as string || 'async'
                       });
                     });
                   }
@@ -904,14 +900,14 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Progress</span>
                 <span className="text-gray-500">
-                  {completedStates.size} / {compiledMachine.stateConfigs.filter((s: any) => s.type !== 'final').length} steps
+                  {completedStates.size} / {(compiledMachine.stateConfigs as Array<Record<string, unknown>>).filter((s: Record<string, unknown>) => s.type !== 'final').length} steps
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="bg-blue-500 h-2 rounded-full transition-all duration-500"
-                  style={{ 
-                    width: `${(completedStates.size / compiledMachine.stateConfigs.filter((s: any) => s.type !== 'final').length) * 100}%` 
+                  style={{
+                    width: `${(completedStates.size / (compiledMachine.stateConfigs as Array<Record<string, unknown>>).filter((s: Record<string, unknown>) => s.type !== 'final').length) * 100}%`
                   }}
                 ></div>
               </div>
@@ -935,16 +931,16 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
               )}
               
               {/* Generate checklist from states */}
-              {compiledMachine?.stateConfigs
-                ?.filter((state: any) => state.type !== 'final')
-                ?.map((state: any, index: number) => {
-                  const isCompleted = completedStates.has(state.id);
+              {(compiledMachine?.stateConfigs as Array<Record<string, unknown>> | undefined)
+                ?.filter((state: Record<string, unknown>) => state.type !== 'final')
+                ?.map((state: Record<string, unknown>, index: number) => {
+                  const isCompleted = completedStates.has(state.id as string);
                   const isCurrent = currentExecutionState === state.id;
-                  const isCollapsed = collapsedStates.has(state.id);
+                  const isCollapsed = collapsedStates.has(state.id as string);
                   const hasResults = executionResults.some(r => r.state === state.id);
                   
                   return (
-                    <div key={state.id} className="border rounded-lg">
+                    <div key={state.id as string} className="border rounded-lg">
                       <div 
                         className={`flex items-center justify-between p-3 cursor-pointer ${
                           isCompleted ? 'bg-green-50' : isCurrent ? 'bg-blue-50' : 'bg-gray-50'
@@ -953,10 +949,10 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
                           if (isCompleted && hasResults) {
                             setCollapsedStates(prev => {
                               const newSet = new Set(prev);
-                              if (newSet.has(state.id)) {
-                                newSet.delete(state.id);
+                              if (newSet.has(state.id as string)) {
+                                newSet.delete(state.id as string);
                               } else {
-                                newSet.add(state.id);
+                                newSet.add(state.id as string);
                               }
                               return newSet;
                             });
@@ -978,7 +974,7 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
                             )}
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-gray-800">{state.id}</div>
+                            <div className="text-sm font-medium text-gray-800">{state.id as string}</div>
                             <div className="text-xs text-gray-500">
                               {isCompleted ? 'Completed' : isCurrent ? 'In Progress' : 'Pending'}
                             </div>
@@ -997,7 +993,7 @@ Provide a detailed response for what happens in the "${stateName}" step. Be spec
                         <div className="border-t bg-white">
                           <div className="p-3 space-y-2">
                             {executionResults
-                              .filter(result => result.state === state.id)
+                              .filter(result => result.state === state.id as string)
                               .map((result, resultIndex) => (
                                 <div key={resultIndex} className="text-sm">
                                   {result.result.startsWith('🔄') ? (

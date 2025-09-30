@@ -130,21 +130,21 @@ describe('AILogger', () => {
     it('should log debug messages only in development', () => {
       const originalEnv = process.env.NODE_ENV;
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      
+
       // Test in production (should not log)
-      (process.env as any).NODE_ENV = 'production';
+      (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
       AILogger.debug('Debug message');
       expect(consoleSpy).not.toHaveBeenCalled();
-      
+
       // Test in development (should log)
-      (process.env as any).NODE_ENV = 'development';
+      (process.env as Record<string, string | undefined>).NODE_ENV = 'development';
       AILogger.debug('Debug message');
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('🐛 [DEBUG]'),
         expect.any(String)
       );
-      
-      (process.env as any).NODE_ENV = originalEnv;
+
+      (process.env as Record<string, string | undefined>).NODE_ENV = originalEnv;
       consoleSpy.mockRestore();
     });
 

@@ -166,8 +166,8 @@ export interface AgentDemoHookReturn {
     componentToRender: ReactNode;
     onSubmit: () => void;
     onStateChanges: () => void;
-    states: any;
-    context: any;
+    states: unknown;
+    context: unknown;
     solution: string;
     aiConfig: AIConfig;
     setAiConfig: (config: AIConfig) => void;
@@ -423,7 +423,7 @@ export function AgentDemoTemplate({ config, hookReturn, inputRef, stateRef }: Ag
                         stepsMap={states ? (() => {
                             // Convert states object to stepsMap format
                             const stepsMap = new Map();
-                            Object.entries(states || {}).forEach(([key, value]: [string, any]) => {
+                            Object.entries(states || {}).forEach(([key, value]: [string, unknown]) => {
                                 if (key !== 'success' && key !== 'failure') {
                                     stepsMap.set(key, {
                                         id: key,
