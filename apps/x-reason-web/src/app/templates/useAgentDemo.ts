@@ -3,6 +3,7 @@ import { useSearchParams } from 'next/navigation';
 import { engineV1 } from "@/app/api/reasoning";
 import { AIConfig, DEFAULT_OPENAI_MODEL, DEFAULT_GEMINI_MODEL, DEFAULT_XAI_MODEL, AIProvider, OpenAIModel, GeminiModel, XAIModel } from "@/app/api/ai/providers";
 import { EngineTypes, ReasonDemoActionTypes, useReasonDemoStore, useReasonDemoDispatch } from "@/app/context/ReasoningDemoContext";
+import { Prompt } from "@/app/api/reasoning/types";
 import { DefaultComponent, Success } from "@/app/components/chemli";
 import { Error } from "@/app/components";
 import { AgentConfig, AgentDemoHookReturn } from "./AgentDemoTemplate";
@@ -13,8 +14,8 @@ export interface AgentSubmissionLogic {
     (params: {
         userQuery: string;
         reasoningEngine: unknown;
-        solver: unknown;
-        programmer?: unknown;
+        solver: Prompt;
+        programmer?: Prompt;
         toolsCatalog?: Map<string, unknown>;
         dispatch: (action: unknown) => void;
         setComponentToRender: (component: React.ReactNode) => void;
@@ -186,7 +187,7 @@ export function useAgentDemo({
             console.error("Error processing query:", error);
             let errorMessage = "An unexpected error occurred";
             if (error instanceof Error) {
-                errorMessage = error.message;
+                errorMessage = (error as Error).message;
             } else if (typeof error === 'object' && error !== null) {
                 const errorObj = error as Record<string, unknown>;
                 if (errorObj.message) {

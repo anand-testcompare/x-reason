@@ -20,10 +20,12 @@ export type OpenAIModel =
  * Google Gemini model configuration
  * - google/gemini-2.0-flash: Latest model, balanced speed and quality
  * - google/gemini-2.5-flash-lite: Ultra-fast, lightweight, lower cost
+ * - google/gemini-2.5-flash: Enhanced 2.5 model with improved capabilities
  */
 export type GeminiModel =
   | 'google/gemini-2.0-flash'
-  | 'google/gemini-2.5-flash-lite';
+  | 'google/gemini-2.5-flash-lite'
+  | 'google/gemini-2.5-flash';
 
 /**
  * XAI Grok models - Approved fast models only
@@ -94,6 +96,12 @@ export const GEMINI_MODELS: Record<GeminiModel, ModelInfo> = {
     description: 'Ultra-fast, lightweight, lower cost',
     speed: 'very-fast',
     costTier: 'low'
+  },
+  'google/gemini-2.5-flash': { 
+    name: 'Gemini 2.5 Flash', 
+    description: 'Enhanced 2.5 model with improved capabilities',
+    speed: 'fast',
+    costTier: 'medium'
   },
 } as const;
 
@@ -172,6 +180,12 @@ function getGatewayInstance(apiKey?: string) {
  */
 export function getAIModel(config: AIConfig) {
   const { provider, model } = config;
+  
+  // Validate provider before proceeding
+  if (!['openai', 'gemini', 'xai'].includes(provider)) {
+    throw new Error(`Unsupported AI provider: ${provider}`);
+  }
+  
   const modelName = getModelForProvider(provider, model);
 
   // Initialize Gateway instance (validates AI_GATEWAY_API_KEY)

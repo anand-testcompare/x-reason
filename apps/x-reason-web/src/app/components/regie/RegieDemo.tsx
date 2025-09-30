@@ -50,8 +50,8 @@ const regieSubmissionLogic: AgentSubmissionLogic = async ({
     const prompts = await solver(userQuery);
     console.log("Solver prompts generated");
 
-    // Import AI action (dynamic import to avoid client-side bundling)
-    const { aiChatCompletion } = await import("@/app/api/ai/actions");
+    // Import AI provider (dynamic import to avoid client-side bundling)
+    const { aiChatCompletion } = await import("@/app/api/ai/providers");
 
     // Call AI directly with the prompts
     const solverResult = await aiChatCompletion([

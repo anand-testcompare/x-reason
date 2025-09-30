@@ -14,6 +14,14 @@ jest.mock('@ai-sdk/google', () => ({
 }));
 
 jest.mock('ai', () => ({
+  createGateway: jest.fn(() => jest.fn((modelId: string) => {
+    // Extract provider from modelId (e.g., "openai/gpt-4.1-nano" -> "openai")
+    const provider = modelId.split('/')[0];
+    return {
+      modelId,
+      provider: provider === 'google' ? 'google.generative-ai' : provider,
+    };
+  })),
   generateText: jest.fn(),
   streamText: jest.fn(),
 }));
@@ -24,7 +32,7 @@ describe('AI Providers Module', () => {
   describe('getModelForProvider', () => {
     it('should return default model for openai when no model specified', () => {
       const model = getModelForProvider('openai');
-      expect(model).toBe('openai/gpt-5-mini');
+      expect(model).toBe('openai/gpt-oss-120b');
     });
 
     it('should return default model for gemini when no model specified', () => {

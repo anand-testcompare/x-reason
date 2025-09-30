@@ -88,8 +88,7 @@ apps/x-reason-web/src/app/
 ├── actions/           # XState machine generation and execution logic
 ├── api/               # API routes for AI providers and reasoning engines
 │   ├── ai/            # Unified AI provider abstraction (Vercel AI SDK)
-│   │   ├── providers.ts   # Centralized provider configuration
-│   │   ├── actions.ts     # Server actions for AI operations
+│   │   ├── providers.ts   # AI provider implementations and configuration
 │   │   └── chat/route.ts  # Streaming chat endpoint
 │   ├── reasoning/     # Core reasoning engine with detailed documentation
 │   ├── credentials/   # API credential validation
