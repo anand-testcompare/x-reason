@@ -161,6 +161,15 @@ function getGatewayInstance(apiKey?: string) {
   // Priority: explicit param > AI_GATEWAY_API_KEY > VERCEL_OIDC_TOKEN
   const key = apiKey || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN;
 
+  // Debug logging
+  console.log('🔑 [AUTH] Authentication check:', {
+    hasExplicitKey: !!apiKey,
+    hasGatewayKey: !!process.env.AI_GATEWAY_API_KEY,
+    hasOIDCToken: !!process.env.VERCEL_OIDC_TOKEN,
+    isVercelEnv: !!process.env.VERCEL,
+    finalKeyAvailable: !!key
+  });
+
   if (!key) {
     throw new Error(
       'AI Gateway authentication required. For local development, set AI_GATEWAY_API_KEY in .env.local. ' +

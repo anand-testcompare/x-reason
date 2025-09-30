@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'X-Reason Team' }],
   creator: 'X-Reason',
   publisher: 'X-Reason',
-  metadataBase: new URL('http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'),
   alternates: {
     canonical: '/',
   },
