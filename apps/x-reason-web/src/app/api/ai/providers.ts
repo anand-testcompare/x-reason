@@ -151,8 +151,8 @@ export function getModelForProvider(provider: AIProvider, model?: OpenAIModel | 
  *
  * Authentication priority:
  * 1. Explicit apiKey parameter
- * 2. AI_GATEWAY_API_KEY environment variable (local development)
- * 3. VERCEL_OIDC_TOKEN environment variable (Vercel deployments - auto-injected)
+ * 2. AI_GATEWAY_API_KEY environment variable (required for preview/production)
+ * 3. VERCEL_OIDC_TOKEN environment variable (auto-injected in production only)
  *
  * @param apiKey - Optional API key (defaults to environment variables)
  * @throws Error if no authentication method is available
