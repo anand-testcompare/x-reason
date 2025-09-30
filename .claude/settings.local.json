@@ -28,7 +28,19 @@
       "Bash(pnpm test:*)",
       "Bash(pnpm outdated:*)",
       "Bash(pnpm update:*)",
-      "Bash(pnpm:*)"
+      "Bash(pnpm:*)",
+      "Bash(awk:*)",
+      "Bash(for file in /Users/anandpant/Development/x-reason/apps/x-reason-web/src/app/api/regie/context.ts)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(done)",
+      "Bash(find:*)",
+      "Read(///**)",
+      "Bash(cat:*)",
+      "Bash(mkdir:*)",
+      "Bash(timeout 30 pnpm test)",
+      "Bash(npx tsc:*)",
+      "Bash(node:*)",
+      "mcp__chrome-devtools__click"
     ],
     "deny": []
   }
