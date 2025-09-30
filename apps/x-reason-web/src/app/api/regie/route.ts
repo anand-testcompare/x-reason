@@ -1,5 +1,4 @@
 import { type NextRequest } from 'next/server';
-import { headers } from 'next/headers'
 
 import {
     regieProgrammer,
@@ -7,7 +6,6 @@ import {
     regieEvaluate,
     regieFunctionCatalog,
     regieToolsCatalog,
-    regieMetaData,
 } from './context';
 import { headlessInterpreter } from '@/app/api/reasoning';
 import { engineV1 as engine } from "@/app/api/reasoning";
@@ -28,7 +26,7 @@ export async function GET(request: NextRequest) {
         });
     }
 
-    const dispatch = (action: ActionType) => {
+    const dispatch = (_action: ActionType) => {
         console.log(`route dispatch callback called`);
     };
     const sendProxy = (action: ActionType) => {

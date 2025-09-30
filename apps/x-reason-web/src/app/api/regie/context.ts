@@ -9,7 +9,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Required step that allows the user to accept or reject the terms of service",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('AcceptTOS implementation called');
                     const payload = {
                         AcceptTOS: { accepted: true, acceptedOn: Date.now() },
@@ -39,7 +39,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description: "Required step that allows the user to confirm they are at least 18 years of age",
                 // this is an example of how you can render a component while the implementation function executes
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('AgeConfirmation implementation called');
                     const payload = {
                         AgeConfirmation: { confirmed: true, acceptedOn: Date.now() },
@@ -66,7 +66,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Optional step allows the user to select partner plugins they can sign up for",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('PartnerPlugins implementation called');
                     dispatch({ type: 'CONTINUE' });
                 },
@@ -77,7 +77,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Required step to collect the users personal information",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('RegisterUser implementation called');
                     dispatch({ type: 'CONTINUE' });
                 },
@@ -88,7 +88,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Required step that allows the user to select the subscription tier they would like",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('SelectPlan implementation called');
                     dispatch({ type: 'CONTINUE' });
                 },
@@ -98,7 +98,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             "SpecialOffers",
             {
                 description: "Optional step that allows the user to select the special offers they would like",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('SpecialOffers implementation called');
                     dispatch({ type: 'CONTINUE' });
                 },
@@ -109,7 +109,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Default state to display for unsupported questions",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('UnsupportedQuestion implementation called');
                     dispatch({ type: 'CONTINUE' });
                 }
@@ -120,7 +120,7 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
             {
                 description:
                     "Default state to display for unsafe questions",
-                implementation: (context: Context, event?: MachineEvent) => {
+                implementation: (_context: Context, _event?: MachineEvent) => {
                     console.log('UnsafeQuestion implementation called');
                     dispatch({ type: 'CONTINUE' });
                 },

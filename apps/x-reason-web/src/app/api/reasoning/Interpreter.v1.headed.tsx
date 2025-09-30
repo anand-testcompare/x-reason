@@ -1,17 +1,18 @@
 "use client";
 
-import { StateMachine, createActor, Actor } from "xstate";
-import { MutableRefObject, useCallback, useEffect, useState } from "react";
+import { createActor, Actor } from "xstate";
+import { useEffect, useState } from "react";
 
 import { useReasonDemoDispatch, ReasonDemoActionTypes, useReasonDemoStore } from "@/app/context/ReasoningDemoContext";
-import { programV1, MachineEvent, InterpreterInput, Context, StateConfig, Task } from ".";
+import { programV1, MachineEvent, StateConfig, Task } from ".";
 
 
 // Using forwardRef to wrap your component allows you to receive a ref from a parent component
 export default function Interpreter({ children }: { children: React.ReactNode }) {
     const dispatch = useReasonDemoDispatch();
-    const { context, states, event, functions } = useReasonDemoStore();
+    const { states, event, functions } = useReasonDemoStore();
     const [currentStates, setCurrentStates] = useState<StateConfig[]>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [interpreter, setInterpreter] = useState<Actor<any>>();
     const [currentFunctions, setCurrentFunctions] = useState<Map<string, Task>>();
     const [currentEvent, setCurrentEvent] = useState<MachineEvent>()
@@ -22,12 +23,8 @@ export default function Interpreter({ children }: { children: React.ReactNode })
         }
 
         if (currentStates !== states || functions !== currentFunctions) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const result: any = programV1(states, functions);
-            const initialContext = context || {
-                status: 0,
-                requestId: "test",
-                stack: [],
-            };
             // In XState v5, we create an actor directly with the machine
             const instance = createActor(result);
             
@@ -47,7 +44,6 @@ export default function Interpreter({ children }: { children: React.ReactNode })
                 }
             });
 
-            //@ts-ignore
             setInterpreter(instance);
             setCurrentStates(states);
             setCurrentFunctions(functions);
@@ -63,8 +59,7 @@ export default function Interpreter({ children }: { children: React.ReactNode })
             interpreter.start();
         }
 
-    }, [context, functions, states, interpreter, currentFunctions, event, currentEvent, currentStates, dispatch]);
+    }, [functions, states, interpreter, currentFunctions, event, currentEvent, currentStates, dispatch]);
 
-    // @ts-ignore
     return <div>{children}</div>;
 };

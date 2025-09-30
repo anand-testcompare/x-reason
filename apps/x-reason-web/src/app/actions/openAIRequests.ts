@@ -1,17 +1,20 @@
 "use server"
 
-import OpenAI from "openai";
+import { aiChatCompletion, AIMessage } from "../api/ai/providers";
 
 export async function openAiRequests(messages: {role: 'system' | 'user' | 'assistant', content: string | null}[]) {
-    const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
+    // Convert to AIMessage format and filter out null content
+    const aiMessages: AIMessage[] = messages
+        .filter(msg => msg.content !== null)
+        .map(msg => ({
+            role: msg.role,
+            content: msg.content as string
+        }));
+
+    const result = await aiChatCompletion(aiMessages, {
+        provider: 'openai',
+        model: 'o4-mini'
     });
 
-    const completion = await openai.chat.completions.create({
-        messages: messages.filter(msg => msg.content !== null) as any,
-        model: "o4-mini", // Updated to mini model
-    });
-
-    return completion.choices[0].message.content;
-
+    return result;
 }

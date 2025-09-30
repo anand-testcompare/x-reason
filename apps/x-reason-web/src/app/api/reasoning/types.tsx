@@ -1,4 +1,4 @@
-import { EventObject, StateNode, StateMachine } from "xstate";
+import { EventObject } from "xstate";
 
 export type Context = {
   requestId: string;

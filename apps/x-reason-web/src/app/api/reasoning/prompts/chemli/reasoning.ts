@@ -1145,9 +1145,9 @@ export async function aiTransition(taskList: string, currentState: string, paylo
   return { system, user };
 }
 
-export async function evaluate(query: string, states: string) {
+export async function evaluate(_query: string, _states: string) {
   const system = `You are X-Reason Evaluator, the X-Reason state machine evaluator. Your job os to rate the quality of AI generated state machines.`;
-  const trainingData = await getEvaluationTrainingData();
+  const _trainingData = await getEvaluationTrainingData();
   const user = `Evaluate the quality of the generated state machine in the previous messages.
 Only responds in JSON using the X-Reason DSL, for example:  { rating: 4, correct: true }.
 `;
