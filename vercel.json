@@ -1,8 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm build",
-  "devCommand": "pnpm dev",
+  "buildCommand": "cd apps/x-reason-web && pnpm build",
+  "devCommand": "cd apps/x-reason-web && pnpm dev",
   "installCommand": "pnpm install",
   "framework": "nextjs",
-  "outputDirectory": "apps/x-reason-web/.next"
+  "outputDirectory": "apps/x-reason-web/.next",
+  "rootDirectory": "apps/x-reason-web"
 }
