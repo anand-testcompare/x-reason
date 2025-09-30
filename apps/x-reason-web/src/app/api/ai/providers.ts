@@ -147,18 +147,25 @@ export function getModelForProvider(provider: AIProvider, model?: OpenAIModel | 
  * Initialize AI Gateway instance with proper configuration.
  *
  * The AI Gateway provides unified access to multiple AI providers (OpenAI, Google, XAI, etc.)
- * through a single API key. No provider-specific keys needed.
+ * through authentication via API key or OIDC token.
  *
- * @param apiKey - Optional API key (defaults to AI_GATEWAY_API_KEY from environment)
- * @throws Error if AI_GATEWAY_API_KEY is not set
+ * Authentication priority:
+ * 1. Explicit apiKey parameter
+ * 2. AI_GATEWAY_API_KEY environment variable (local development)
+ * 3. VERCEL_OIDC_TOKEN environment variable (Vercel deployments - auto-injected)
+ *
+ * @param apiKey - Optional API key (defaults to environment variables)
+ * @throws Error if no authentication method is available
  */
 function getGatewayInstance(apiKey?: string) {
-  const key = apiKey || process.env.AI_GATEWAY_API_KEY;
+  // Priority: explicit param > AI_GATEWAY_API_KEY > VERCEL_OIDC_TOKEN
+  const key = apiKey || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN;
 
   if (!key) {
     throw new Error(
-      'AI_GATEWAY_API_KEY is required. Set it in .env.local. ' +
-      'Get your key from: https://vercel.com/docs/ai-gateway/getting-started'
+      'AI Gateway authentication required. For local development, set AI_GATEWAY_API_KEY in .env.local. ' +
+      'For Vercel deployments, VERCEL_OIDC_TOKEN is automatically injected. ' +
+      'Get your API key from: https://vercel.com/docs/ai-gateway/getting-started'
     );
   }
 
