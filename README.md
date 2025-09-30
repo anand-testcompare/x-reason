@@ -35,6 +35,31 @@ A Next.js application that demonstrates dynamic AI-generated software flows usin
 
 X-Reason is an innovative prototype that demonstrates how AI can dynamically assemble and execute software workflows. By converting AI-generated task lists into executable XState machines, it enables non-technical users to compose software through natural language descriptions.
 
+## Migration Notes
+
+**Recent architectural changes** (as of v0.3.0):
+
+### Provider Consolidation
+- **Unified AI SDK**: All AI provider interactions now use [Vercel AI SDK](https://sdk.vercel.ai/) (`ai`, `@ai-sdk/openai`, `@ai-sdk/google`)
+- **Removed Routes**: Legacy `/api/openai/` and `/api/gemini/` directories have been deleted
+- **New Endpoint**: Use unified `/api/ai/chat` for all AI interactions
+- **Centralized Config**: All provider setup in `apps/x-reason-web/src/app/api/ai/providers.ts`
+
+### Server-Side Credentials Only
+- **No Client Keys**: API keys are now managed exclusively server-side via `.env.local`
+- **Clear Local Storage**: Remove any cached client-side credentials from browser localStorage
+- **Update Environment**: Ensure your `.env.local` contains `OPENAI_API_KEY` or `GOOGLE_GENERATIVE_AI_API_KEY`
+
+### Action Items for Existing Contributors
+1. Update your local `.env.local` with server-side API keys (see [Configuration](#configuration))
+2. Clear browser localStorage to remove old client-side credentials
+3. Update any custom integrations to use `/api/ai/chat` instead of legacy provider-specific routes
+4. Run `pnpm install` to ensure Vercel AI SDK dependencies are installed
+
+For detailed technical documentation, see:
+- [AGENTS.md](AGENTS.md) - Updated agent interaction patterns
+- [apps/x-reason-web/src/app/api/reasoning/README.md](apps/x-reason-web/src/app/api/reasoning/README.md) - Reasoning engine documentation
+
 ## Video Demo
 
 <div align="center">
@@ -81,15 +106,22 @@ npm install
 
 ### Configuration
 
-Create a `.env.local` file in the root directory and add your API keys:
+Create a `.env.local` file in the `apps/x-reason-web/` directory and add your API keys:
 
 ```bash
-# Required - at least one provider
+# AI Provider Configuration
+# Add at least one API key to enable AI functionality
+
+# OpenAI API Key (optional)
+# Get your key from: https://platform.openai.com/api-keys
 OPENAI_API_KEY=your_openai_key_here
 
-# Optional - additional provider
+# Google Gemini API Key (optional)
+# Get your key from: https://aistudio.google.com/app/apikey
 GOOGLE_GENERATIVE_AI_API_KEY=your_google_ai_key_here
 ```
+
+**Note**: With the Vercel AI SDK integration, all AI provider credentials are managed server-side only. No client-side API keys are required or exposed.
 
 ### Running the Application
 
@@ -141,12 +173,19 @@ pnpm run lint
 
 ### AI Provider Integration
 
-The application supports multiple AI providers through a unified SDK:
+The application uses the **Vercel AI SDK** for unified multi-provider support:
 
-- **OpenAI**: o4-mini, o3-mini, gpt-4.1-mini, gpt-4.1-nano
-- **Google**: Gemini 2.0 Flash, Gemini 2.5 Flash, Gemini 2.5 Flash Lite, Gemini 2.5 Pro
+- **Architecture**: Centralized provider configuration in `src/app/api/ai/providers.ts`
+- **Supported Providers**:
+  - **OpenAI**: o4-mini, o3-mini, gpt-4.1-mini, gpt-4.1-nano
+  - **Google**: Gemini 2.0 Flash, Gemini 2.5 Flash, Gemini 2.5 Flash Lite, Gemini 2.5 Pro
+- **Features**:
+  - Streaming responses via `streamText()`
+  - Server-side credential management
+  - Automatic provider fallback
+  - Runtime provider switching
 
-Providers can be switched at runtime using the AI Provider Selector component.
+Providers can be configured at runtime without requiring client-side API keys.
 
 ### State Machine System
 
@@ -193,6 +232,8 @@ const registrationMachine = machineMacro(taskMap);
 
 ## Recent Updates
 
+- **Vercel AI SDK Integration**: Migrated to unified AI SDK for all provider interactions
+- **Server-Side Credentials**: Removed client credential prompts, all keys managed server-side
 - **Next.js 15**: Upgraded from v14 with Turbopack support
 - **XState v5**: Migrated from v4 with improved APIs
 - **Multi-AI Providers**: Added Google Gemini alongside OpenAI
@@ -204,9 +245,8 @@ const registrationMachine = machineMacro(taskMap);
 
 ### AI Endpoints
 
-- `POST /api/ai/chat` - Unified chat endpoint for all providers
-- `POST /api/ai/stream` - Streaming responses endpoint
-- `GET /api/ai/providers` - List available providers
+- `POST /api/ai/chat` - Unified streaming chat endpoint for all providers (powered by Vercel AI SDK)
+- `POST /api/reasoning/stream` - Reasoning engine streaming endpoint
 
 ### State Machine API
 

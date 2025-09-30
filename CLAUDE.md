@@ -31,9 +31,12 @@ pnpm test
 ```
 
 ### Setup Requirements
-- Requires OpenAI API key in `.env.local` (in apps/x-reason-web/)
+- Requires at least one AI provider API key in `.env.local` (in apps/x-reason-web/)
+  - OPENAI_API_KEY (optional)
+  - GOOGLE_GENERATIVE_AI_API_KEY (optional)
 - Uses pnpm workspace with monorepo structure
 - Development server runs on `http://localhost:3000`
+- All AI credentials are server-side only (no client-side keys required)
 
 ## Technical Stack
 
@@ -42,7 +45,7 @@ pnpm test
 - **Language**: TypeScript with strict configuration
 - **State Management**: XState 5.20.1 for state machine execution
 - **UI**: Tailwind CSS with shadcn/ui components and Radix UI primitives
-- **AI Integration**: Multiple providers (OpenAI, Google) with custom API routes
+- **AI Integration**: Vercel AI SDK with multiple providers (OpenAI, Google)
 - **Testing**: Jest with Testing Library (configured for 120s timeout)
 - **Utilities**: Ramda for functional programming, class-variance-authority for styling
 - **Streaming**: Server-sent events for real-time AI responses
@@ -60,11 +63,12 @@ The application converts AI-generated task lists into executable XState machines
    - Maintains context across execution steps
    - Real-time streaming support for AI responses
 
-2. **Multi-Provider AI Integration**:
-   - Custom API routes for different AI providers
-   - Supports OpenAI and Google Gemini
-   - Streaming responses with Server-Sent Events
-   - Provider-specific request handlers
+2. **Multi-Provider AI Integration** (`apps/x-reason-web/src/app/api/ai/`):
+   - Unified provider interface using Vercel AI SDK
+   - Supports OpenAI and Google Gemini via `@ai-sdk/openai` and `@ai-sdk/google`
+   - Streaming responses with `streamText()` and `generateText()`
+   - Server-side credential management (no client-side API keys)
+   - Centralized configuration in `providers.ts`
 
 3. **Domain-Specific Components**:
    - **Chemli**: Chemical product engineering workflows (`apps/x-reason-web/src/app/components/chemli/`)
@@ -83,9 +87,10 @@ The application converts AI-generated task lists into executable XState machines
 apps/x-reason-web/src/app/
 ├── actions/           # XState machine generation and execution logic
 ├── api/               # API routes for AI providers and reasoning engines
-│   ├── ai/            # Unified AI provider abstraction
-│   ├── openai/        # OpenAI integration (chat, assistants)
-│   ├── gemini/        # Google Gemini integration
+│   ├── ai/            # Unified AI provider abstraction (Vercel AI SDK)
+│   │   ├── providers.ts   # Centralized provider configuration
+│   │   ├── actions.ts     # Server actions for AI operations
+│   │   └── chat/route.ts  # Streaming chat endpoint
 │   ├── reasoning/     # Core reasoning engine with detailed documentation
 │   ├── credentials/   # API credential validation
 │   └── regie/         # Registration-specific API routes
@@ -126,12 +131,14 @@ packages/x-reason/     # Shared package for common utilities
 
 ## Recent Enhancements
 
+- **Vercel AI SDK Integration**: Unified AI provider interface with `ai`, `@ai-sdk/openai`, and `@ai-sdk/google`
+- **Server-Side Credentials**: All API keys managed server-side, no client credential prompts
 - **Monorepo Structure**: Migrated to pnpm workspace-based monorepo
-- **Multi-AI Provider Support**: Custom API routes for OpenAI and Google Gemini
-- **Streaming Responses**: Real-time streaming AI responses with Server-Sent Events
+- **Multi-AI Provider Support**: OpenAI and Google Gemini via Vercel AI SDK
+- **Streaming Responses**: Real-time streaming with `streamText()` from Vercel AI SDK
 - **UI Modernization**: Tailwind CSS with shadcn/ui and Radix UI primitives
 - **Improved Navigation**: Responsive navigation with mobile support
-- **Next.js 15 Upgrade**: Updated to Next.js 15.4.3
+- **Next.js 15 Upgrade**: Updated to Next.js 15.4.3 with ES module support
 - **Enhanced Type Safety**: Workspace TypeScript configurations and type definitions
 
 ## Development Status
