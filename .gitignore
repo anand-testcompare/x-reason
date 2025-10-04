@@ -63,3 +63,5 @@ next-env.d.ts
 .claude/settings.local.json
 apps/x-reason-web/.env.vercel
 apps/x-reason-web/.env.vercel
+
+LINKEDIN.md
