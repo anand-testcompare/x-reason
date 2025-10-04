@@ -23,15 +23,16 @@ export const metadata: Metadata = {
     apple: '/icon_cherry_blossom_small.png',
   },
   openGraph: {
-    type: 'website',
+    type: 'article',
     locale: 'en_US',
     url: '/',
     title: 'X-Reason - AI-Driven State Machine Generation',
     description: 'Dynamic AI-generated software flows using XState state machines. Showcase innovative AI-driven software composition patterns with real-time streaming responses.',
     siteName: 'X-Reason',
+    publishedTime: '2024-09-30T00:00:00.000Z',
     images: [
       {
-        url: '/opengraph.png',
+        url: 'https://www.x-reason.dev/opengraph.png',
         width: 2772,
         height: 1672,
         alt: 'X-Reason - AI-Driven State Machine Generation',
