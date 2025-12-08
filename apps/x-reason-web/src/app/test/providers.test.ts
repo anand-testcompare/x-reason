@@ -1,18 +1,4 @@
-// Mock the Vercel AI SDK modules before importing
-jest.mock('@ai-sdk/openai', () => ({
-  createOpenAI: jest.fn(() => jest.fn((modelId: string) => ({
-    modelId,
-    provider: 'openai',
-  }))),
-}));
-
-jest.mock('@ai-sdk/google', () => ({
-  createGoogleGenerativeAI: jest.fn(() => jest.fn((modelId: string) => ({
-    modelId,
-    provider: 'google.generative-ai',
-  }))),
-}));
-
+// Mock the Vercel AI SDK gateway module before importing
 jest.mock('ai', () => ({
   createGateway: jest.fn(() => jest.fn((modelId: string) => {
     // Extract provider from modelId (e.g., "openai/gpt-4.1-nano" -> "openai")
