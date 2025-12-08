@@ -77,7 +77,7 @@ describe('providers.ts - Gateway-only enforcement (Story 004)', () => {
 
     const config: AIConfig = { provider: 'openai', model: 'gpt-4.1-nano' };
 
-    expect(() => getAIModel(config)).toThrow('AI_GATEWAY_API_KEY is required');
+    expect(() => getAIModel(config)).toThrow(/AI Gateway authentication required/);
   });
 
   it('should throw error when AI_GATEWAY_API_KEY is missing for Gemini', () => {
@@ -86,6 +86,6 @@ describe('providers.ts - Gateway-only enforcement (Story 004)', () => {
 
     const config: AIConfig = { provider: 'gemini', model: 'gemini-2.0-flash' };
 
-    expect(() => getAIModel(config)).toThrow('AI_GATEWAY_API_KEY is required');
+    expect(() => getAIModel(config)).toThrow(/AI Gateway authentication required/);
   });
 });
