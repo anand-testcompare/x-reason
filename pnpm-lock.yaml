@@ -30,6 +30,12 @@ importers:
 
   apps/x-reason-web:
     dependencies:
+      '@codestrap/developer-foundations-types':
+        specifier: ^1.3.0
+        version: 1.3.0
+      '@codestrap/developer-foundations-utils':
+        specifier: ^1.3.0
+        version: 1.3.0
       '@codestrap/developer-foundations-x-reason':
         specifier: ^1.3.0
         version: 1.3.0(reflect-metadata@0.2.2)

@@ -11,6 +11,8 @@
     "test": "jest"
   },
   "dependencies": {
+    "@codestrap/developer-foundations-types": "^1.3.0",
+    "@codestrap/developer-foundations-utils": "^1.3.0",
     "@codestrap/developer-foundations-x-reason": "^1.3.0",
     "@radix-ui/react-checkbox": "^1.3.3",
     "@radix-ui/react-dialog": "^1.1.15",
