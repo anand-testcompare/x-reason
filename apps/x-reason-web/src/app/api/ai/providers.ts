@@ -158,15 +158,17 @@ export function getModelForProvider(provider: AIProvider, model?: OpenAIModel | 
  * @throws Error if no authentication method is available
  */
 function getGatewayInstance(apiKey?: string) {
-  // Priority: explicit param > AI_GATEWAY_API_KEY > VERCEL_OIDC_TOKEN
-  const key = apiKey || process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN;
+  // Priority: explicit param > AI_GATEWAY_API_KEY > VERCEL_OIDC_TOKEN (Vercel-only)
+  const isVercelEnv = !!process.env.VERCEL;
+  const oidcToken = isVercelEnv ? process.env.VERCEL_OIDC_TOKEN : undefined;
+  const key = apiKey || process.env.AI_GATEWAY_API_KEY || oidcToken;
 
   // Debug logging
   console.log('🔑 [AUTH] Authentication check:', {
     hasExplicitKey: !!apiKey,
     hasGatewayKey: !!process.env.AI_GATEWAY_API_KEY,
-    hasOIDCToken: !!process.env.VERCEL_OIDC_TOKEN,
-    isVercelEnv: !!process.env.VERCEL,
+    hasOIDCToken: !!oidcToken,
+    isVercelEnv,
     finalKeyAvailable: !!key
   });
 
@@ -180,8 +182,7 @@ function getGatewayInstance(apiKey?: string) {
 
   return createGateway({
     apiKey: key,
-    // Default baseURL: https://ai-gateway.vercel.sh/v1/ai
-    // Override if needed: baseURL: process.env.AI_GATEWAY_BASE_URL
+    baseURL: process.env.AI_GATEWAY_BASE_URL,
   });
 }
 
