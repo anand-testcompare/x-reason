@@ -28,6 +28,10 @@ Do not add `AI_GATEWAY_API_KEY` or provider-specific keys. If AI calls fail with
 pnpm dlx vercel@latest env pull apps/x-reason-web/.env.local
 ```
 
+Preview and Production deployments use Vercel's runtime
+`x-vercel-oidc-token` function header instead of a runtime
+`VERCEL_OIDC_TOKEN` environment variable.
+
 ## Checks
 
 ```bash

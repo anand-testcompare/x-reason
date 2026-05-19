@@ -40,10 +40,9 @@ dotenv.config({ path: '.env.local' });
 // @ts-ignore - Allowing modification of NODE_ENV for test environment
 process.env.NODE_ENV = 'test';
 
-// Mock environment variables for testing
-// Set AI_GATEWAY_API_KEY for Gateway-only authentication
-if (!process.env.AI_GATEWAY_API_KEY) {
-  process.env.AI_GATEWAY_API_KEY = 'test-gateway-key';
+// Mock OIDC auth for tests that exercise Gateway-gated paths.
+if (!process.env.VERCEL_OIDC_TOKEN) {
+  process.env.VERCEL_OIDC_TOKEN = 'test-oidc-token';
 }
 
 // Global test utilities

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { AI_MODEL_OPTIONS, DEFAULT_MODEL, ModelInfo } from '../providers';
+import { NextRequest, NextResponse } from 'next/server';
+import { AI_MODEL_OPTIONS, DEFAULT_MODEL, getGatewayAvailability, ModelInfo } from '../providers';
 
 export interface ModelsResponse {
   models: ModelInfo[];
@@ -13,9 +13,9 @@ export interface ModelsResponse {
  *
  * Returns the tiny approved model allowlist and environment-based availability flags.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const hasGatewayAuth = !!process.env.VERCEL_OIDC_TOKEN;
+    const hasGatewayAuth = Object.values(getGatewayAvailability(request.headers)).some(Boolean);
 
     const response: ModelsResponse = {
       models: AI_MODEL_OPTIONS,
@@ -26,7 +26,7 @@ export async function GET() {
 
     return NextResponse.json(response, {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        'Cache-Control': 'no-store',
       },
     });
   } catch (_error) {

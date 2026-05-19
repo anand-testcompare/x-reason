@@ -61,19 +61,29 @@ export function getModelForProvider(provider: AIProvider, model?: AIModel): AIMo
   return DEFAULT_MODELS[provider];
 }
 
-/**
- * Initialize AI Gateway instance with proper configuration.
- *
- * The AI Gateway provides access to the approved model allowlist through
- * Vercel's OIDC token.
- * @throws Error if no authentication method is available
- */
-function assertGatewayAuth() {
-  if (!process.env.VERCEL_OIDC_TOKEN) {
-    throw new Error(
-      'Vercel OIDC token required. Run `pnpm dlx vercel@latest env pull apps/x-reason-web/.env.local` to refresh VERCEL_OIDC_TOKEN.'
-    );
+const OIDC_HEADER = 'x-vercel-oidc-token';
+
+function disableGatewayApiKeyFallback() {
+  if (process.env.AI_GATEWAY_API_KEY) {
+    console.warn('Ignoring AI_GATEWAY_API_KEY; x-reason uses Vercel OIDC for AI Gateway auth.');
+    delete process.env.AI_GATEWAY_API_KEY;
   }
+}
+
+export function hasGatewayAuth(headers?: Headers | null): boolean {
+  return Boolean(
+    process.env.VERCEL_OIDC_TOKEN ||
+    headers?.has(OIDC_HEADER)
+  );
+}
+
+export function getGatewayAvailability(headers?: Headers | null): Record<AIProvider, boolean> {
+  const hasAuth = hasGatewayAuth(headers);
+
+  return {
+    openai: hasAuth,
+    gemini: hasAuth,
+  };
 }
 
 /**
@@ -98,7 +108,7 @@ export function getAIModel(config: AIConfig) {
     throw new Error(`Model ${modelName} is not supported for provider ${provider}`);
   }
 
-  assertGatewayAuth();
+  disableGatewayApiKeyFallback();
 
   return modelName;
 }

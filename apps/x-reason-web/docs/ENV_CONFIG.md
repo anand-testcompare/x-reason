@@ -2,7 +2,7 @@
 
 This project uses Vercel AI Gateway through OIDC only. Do not add provider keys or an `AI_GATEWAY_API_KEY`.
 
-## Required
+## Local Development
 
 ```bash
 VERCEL_OIDC_TOKEN
@@ -15,6 +15,11 @@ pnpm dlx vercel@latest env pull apps/x-reason-web/.env.local
 ```
 
 Vercel OIDC tokens are short lived. Refresh the env file when AI calls begin failing with auth errors.
+
+In Vercel Preview and Production, `VERCEL_OIDC_TOKEN` is not expected to exist at
+runtime. Vercel exposes the OIDC token to functions on the
+`x-vercel-oidc-token` request header, and the Vercel AI SDK reads that header
+when routing plain Gateway model IDs.
 
 ## Unsupported
 

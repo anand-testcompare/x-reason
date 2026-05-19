@@ -1,11 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getGatewayAvailability } from '../../ai/providers';
 
-export async function GET() {
-  const hasGatewayAuth = !!process.env.VERCEL_OIDC_TOKEN;
-  const hasServerCredentials = {
-    openai: hasGatewayAuth,
-    gemini: hasGatewayAuth,
-  };
+export async function GET(request: NextRequest) {
+  const hasServerCredentials = getGatewayAvailability(request.headers);
 
   const hasAnyServerCredentials = Object.values(hasServerCredentials).some(Boolean);
 

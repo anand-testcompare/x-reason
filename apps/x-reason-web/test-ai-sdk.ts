@@ -15,6 +15,8 @@ const __dirname = dirname(__filename);
 
 dotenv.config({ path: join(__dirname, '.env.local') });
 
+delete process.env.AI_GATEWAY_API_KEY;
+
 const smokeTests = [
   {
     name: 'OpenAI fast default',
