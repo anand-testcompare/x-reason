@@ -22,7 +22,7 @@ export const LoadingSpinner = () => (
 // Responsive Container with adaptive margins
 export const ResponsiveContainer = ({ children }: { children: ReactNode }) => (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-        <div className="mx-auto px-3 py-6 sm:px-6 sm:py-8 md:px-8 md:py-12 lg:px-12 lg:py-16 max-w-7xl">
+        <div className="mx-auto max-w-6xl px-3 py-6 sm:px-6 sm:py-8 md:px-8 md:py-12 xl:px-10 xl:py-14">
             {children}
         </div>
     </div>

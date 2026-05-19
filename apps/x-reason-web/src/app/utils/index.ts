@@ -1,5 +1,6 @@
 export * from './storeFactory';
 export * from './aiLogger';
+export * from './stateMachineJson';
 export { default as factory } from './factory';
 export { extractJsonFromBackticks } from '@codestrap/developer-foundations-utils';
 

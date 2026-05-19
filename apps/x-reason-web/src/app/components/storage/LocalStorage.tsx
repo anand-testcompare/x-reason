@@ -52,13 +52,14 @@ const LocalStorage = () => {
     }, []);
 
     const handleSave = () => {
-        if (!states || !solution) {
+        const trimmedName = name.trim();
+        if (!states || !solution || !trimmedName) {
             console.warn('No states or solution to save');
             return;
         }
         
-        console.log('Saving solution:', { name, states, solution });
-        saveToLocalStorage(name, `${JSON.stringify(states)}@@${solution}`);
+        console.log('Saving solution:', { name: trimmedName, states, solution });
+        saveToLocalStorage(trimmedName, `${JSON.stringify(states)}@@${solution}`);
         setAvailableKeys(getAllReasonKeys());
         setIsSaveDialogOpen(false);
         setName(''); // Clear the name field
@@ -134,7 +135,7 @@ const LocalStorage = () => {
                 <select 
                     value={selectedKey || ''} 
                     onChange={(e) => handleSelectKey(e.target.value)}
-                    className="w-full p-2 border rounded text-xs"
+                    className="h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm text-foreground"
                 >
                     <option value="">Select a solution</option>
                     {availableKeys.map(key => (
@@ -147,18 +148,18 @@ const LocalStorage = () => {
             </div>
 
             <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
-                <DialogContent className="max-w-md bg-white dark:bg-gray-900 border shadow-lg">
-                    <DialogHeader className="space-y-3 pb-4">
-                        <DialogTitle className="text-xl font-bold text-black dark:text-white">
+                <DialogContent className="max-w-md border border-cyan-200 bg-slate-50 text-slate-950 shadow-xl">
+                    <DialogHeader className="space-y-3 pb-2">
+                        <DialogTitle className="text-xl font-semibold text-slate-950">
                             Save Solution
                         </DialogTitle>
-                        <DialogDescription className="text-base text-gray-700 dark:text-gray-200">
+                        <DialogDescription className="text-sm leading-6 text-slate-600">
                             Give your solution a memorable name so you can easily find it later.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
+                    <div className="space-y-4 py-2">
                         <div className="space-y-2">
-                            <Label htmlFor="name" className="text-base font-semibold text-black dark:text-white">
+                            <Label htmlFor="name" className="text-sm font-semibold text-slate-900">
                                 Solution Name
                             </Label>
                             <Input
@@ -166,17 +167,17 @@ const LocalStorage = () => {
                                 placeholder="e.g. User Registration Flow v1"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full text-black dark:text-white bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                                className="h-11 w-full border-slate-300 bg-white text-slate-950 placeholder:text-slate-400"
                                 autoFocus
                             />
                         </div>
                     </div>
-                    <DialogFooter className="flex justify-end space-x-2 pt-4 border-t">
+                    <DialogFooter className="gap-2 border-t border-cyan-200 pt-4 sm:space-x-0">
                         <Button 
                             type="button" 
                             variant="outline" 
                             onClick={() => setIsSaveDialogOpen(false)}
-                            className="text-black dark:text-white border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                            className="border-slate-300 bg-white text-slate-800 hover:bg-slate-100"
                         >
                             Cancel
                         </Button>
@@ -184,7 +185,7 @@ const LocalStorage = () => {
                             type="button" 
                             onClick={handleSave}
                             disabled={!name.trim()}
-                            className="text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:text-gray-200"
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
                         >
                             Save Solution
                         </Button>
@@ -193,21 +194,21 @@ const LocalStorage = () => {
             </Dialog>
 
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent className="max-w-md bg-white dark:bg-gray-900 border shadow-lg">
-                    <DialogHeader className="space-y-3 pb-4">
-                        <DialogTitle className="text-xl font-bold text-black dark:text-white">
+                <DialogContent className="max-w-md border border-cyan-200 bg-slate-50 text-slate-950 shadow-xl">
+                    <DialogHeader className="space-y-3 pb-2">
+                        <DialogTitle className="text-xl font-semibold text-slate-950">
                             Delete Solution
                         </DialogTitle>
-                        <DialogDescription className="text-base text-gray-700 dark:text-gray-200">
+                        <DialogDescription className="text-sm leading-6 text-slate-600">
                             Are you sure you want to delete this solution? This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
-                    <DialogFooter className="flex justify-end space-x-2 pt-4 border-t">
+                    <DialogFooter className="gap-2 border-t border-cyan-200 pt-4 sm:space-x-0">
                         <Button 
                             type="button" 
                             variant="outline" 
                             onClick={() => setIsDeleteDialogOpen(false)}
-                            className="text-black dark:text-white border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                            className="border-slate-300 bg-white text-slate-800 hover:bg-slate-100"
                         >
                             Cancel
                         </Button>

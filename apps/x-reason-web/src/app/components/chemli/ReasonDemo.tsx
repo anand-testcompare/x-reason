@@ -10,6 +10,7 @@ import {
     useAgentDemo,
     AgentSubmissionLogic 
 } from "@/app/templates";
+import { parseStateMachineJson } from "@/app/utils";
 
 // Chemli-specific submission logic
 const chemliSubmissionLogic: AgentSubmissionLogic = async ({
@@ -86,13 +87,9 @@ const chemliSubmissionLogic: AgentSubmissionLogic = async ({
     });
     console.log("Program result text:", programResultText);
 
-    // Parse the JSON response (strip markdown code fences if present)
     let programResult;
     try {
-        let jsonText = programResultText || '[]';
-        // Remove markdown code fences if present
-        jsonText = jsonText.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
-        programResult = JSON.parse(jsonText);
+        programResult = parseStateMachineJson(programResultText);
     } catch (e) {
         console.error("Failed to parse program result:", e);
         setComponentToRender(<Error message="Unable to parse state machine. Please try again." />);
@@ -100,7 +97,7 @@ const chemliSubmissionLogic: AgentSubmissionLogic = async ({
     }
     console.log("Program result parsed:", programResult);
 
-    if (!programResult || !Array.isArray(programResult)) {
+    if (!programResult) {
         setComponentToRender(<Error message="Unable to generate state machine. Please try again." />);
         return;
     }

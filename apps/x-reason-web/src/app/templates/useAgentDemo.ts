@@ -1,13 +1,12 @@
 import React, { RefObject, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from 'next/navigation';
 import { engineV1 } from "@/app/api/reasoning";
-import { AIConfig, DEFAULT_OPENAI_MODEL, DEFAULT_GEMINI_MODEL, DEFAULT_XAI_MODEL, AIProvider, OpenAIModel, GeminiModel, XAIModel } from "@/app/api/ai/providers";
+import { AIConfig, DEFAULT_MODEL, DEFAULT_PROVIDER } from "@/app/api/ai/providers";
 import { EngineTypes, ReasonDemoActionTypes, useReasonDemoStore, useReasonDemoDispatch } from "@/app/context/ReasoningDemoContext";
 import { Prompt } from "@/app/api/reasoning/types";
 import { DefaultComponent, Success } from "@/app/components/chemli";
 import { Error } from "@/app/components";
 import { AgentConfig, AgentDemoHookReturn } from "./AgentDemoTemplate";
-import { useCredentials } from "@/app/context/CredentialsContext";
 
 // Base submission logic interface
 export interface AgentSubmissionLogic {
@@ -47,59 +46,17 @@ export function useAgentDemo({
     const engineType = searchParams.get('engineType') as EngineTypes || defaultEngineType;
     const { states, currentState, context, solution, functions, factory } = useReasonDemoStore();
     const dispatch = useReasonDemoDispatch();
-    const { credentials } = useCredentials();
     const [isLoading, setIsLoading] = useState(false);
     const [componentToRender, setComponentToRender] = useState<React.ReactNode>(null);
     
-    // Determine initial provider and model based on available credentials
-    const getInitialProvider = useCallback((): AIProvider => {
-        if (credentials.openaiApiKey) return 'openai';
-        if (credentials.geminiApiKey) return 'gemini';
-        return 'openai'; // Primary default is now OpenAI
-    }, [credentials.openaiApiKey, credentials.geminiApiKey]);
-
-    const getDefaultModelForProvider = (provider: AIProvider): OpenAIModel | GeminiModel | XAIModel => {
-        switch (provider) {
-            case 'openai':
-                return DEFAULT_OPENAI_MODEL;
-            case 'gemini':
-                return DEFAULT_GEMINI_MODEL;
-            case 'xai':
-                return DEFAULT_XAI_MODEL;
-            default:
-                return DEFAULT_OPENAI_MODEL; // Primary default is now OpenAI
-        }
-    };
-
-    const initialProvider = getInitialProvider();
     const [aiConfig, setAiConfig] = useState<AIConfig>({
-        provider: initialProvider,
-        model: getDefaultModelForProvider(initialProvider),
-        credentials: {
-            openaiApiKey: credentials.openaiApiKey,
-            geminiApiKey: credentials.geminiApiKey,
-        }
+        provider: DEFAULT_PROVIDER,
+        model: DEFAULT_MODEL,
     });
     
     const [isExpanded, setIsExpanded] = useState(false);
     const [copySuccess, setCopySuccess] = useState(false);
     
-    // Update AI config when credentials change
-    useEffect(() => {
-        const newProvider = getInitialProvider();
-        const newModel = getDefaultModelForProvider(newProvider);
-
-        setAiConfig(prev => ({
-            ...prev,
-            provider: newProvider,
-            model: newModel,
-            credentials: {
-                openaiApiKey: credentials.openaiApiKey,
-                geminiApiKey: credentials.geminiApiKey,
-            }
-        }));
-    }, [credentials, getInitialProvider]);
-
     // Create reasoning engine with user-selected AI config
     const reasoningEngine = useMemo(() => engineV1, []);
     

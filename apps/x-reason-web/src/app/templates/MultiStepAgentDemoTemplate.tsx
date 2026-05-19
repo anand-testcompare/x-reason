@@ -9,7 +9,6 @@ import { StateMachineVisualizer } from "@/app/components/StateMachineVisualizer"
 import { AgentDemoTemplateProps, ResponsiveContainer, SampleQueries, JsonHighlighter } from "./AgentDemoTemplate";
 import { Textarea } from "@/app/components/ui/textarea";
 import { AIProviderSelector } from "@/app/components/ui/ai-provider-selector";
-import { useCredentials } from "@/app/context/CredentialsContext";
 import { ArrowUp, ArrowLeft, ArrowRight, Play, Copy, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import Interpreter from "@/app/api/reasoning/Interpreter.v1.headed";
 import { LocalStorage } from "@/app/components";
@@ -24,7 +23,6 @@ const STEPS = [
 ];
 
 export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: AgentDemoTemplateProps) {
-  const { credentials } = useCredentials();
   const [currentStep, setCurrentStep] = useState(0);
   const [compiledMachine, setCompiledMachine] = useState<Record<string, unknown> | null>(null);
   const [executionResults, setExecutionResults] = useState<Array<{state: string, result: string, timestamp: Date}>>([]);
@@ -259,6 +257,18 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
     }
   };
 
+  const getExecutableStates = () => {
+    const seen = new Set<string>();
+    return ((compiledMachine?.stateConfigs as Array<Record<string, unknown>> | undefined) || [])
+      .filter((state: Record<string, unknown>) => state.type !== 'final')
+      .filter((state: Record<string, unknown>) => {
+        const id = String(state.id || '');
+        if (!id || seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+  };
+
   const executeStateMachine = async () => {
     console.log('executeStateMachine called');
     console.log('compiledMachine:', compiledMachine);
@@ -288,8 +298,7 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
       }
 
       // Execute each state sequentially
-      const states = (compiledMachine.stateConfigs as Array<Record<string, unknown>>)
-        .filter((state: Record<string, unknown>) => state.type !== 'final');
+      const states = getExecutableStates();
 
       console.log(`Executing ${states.length} states sequentially`);
 
@@ -309,12 +318,12 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
 
       console.log('All states executed successfully');
       setIsExecuting(false);
-      setCurrentExecutionState('success');
+      setCurrentExecutionState('');
 
       // Add final completion message
       setExecutionResults(prev => [...prev, {
         state: 'final-summary',
-        result: `## 🎉 Execution Complete!\n\nAll ${states.length} steps have been executed successfully. Review the results above to verify each step completed as expected.`,
+        result: `Execution complete.\n\nAll ${states.length} steps have been executed successfully. Review the results above to verify each step completed as expected.`,
         timestamp: new Date()
       }]);
 
@@ -352,7 +361,6 @@ Describe what happens in this step concisely. Start directly with the action, no
           type: 'solve',
           provider: hookReturn.aiConfig?.provider || 'gemini',
           model: hookReturn.aiConfig?.model,
-          credentials: credentials
         })
       });
 
@@ -465,7 +473,8 @@ Describe what happens in this step concisely. Start directly with the action, no
 
   const generateMarkdownReport = () => {
     const timestamp = new Date().toLocaleString();
-    const totalSteps = (compiledMachine?.stateConfigs as Array<Record<string, unknown>> | undefined)?.filter((s: Record<string, unknown>) => s.type !== 'final').length || 0;
+    const reportStates = getExecutableStates();
+    const totalSteps = reportStates.length;
     const completedSteps = completedStates.size;
     
     let markdown = `# State Machine Execution Report\n\n`;
@@ -483,9 +492,8 @@ Describe what happens in this step concisely. Start directly with the action, no
     });
 
     // Generate markdown for each state
-    (compiledMachine?.stateConfigs as Array<Record<string, unknown>> | undefined)
-      ?.filter((state: Record<string, unknown>) => state.type !== 'final')
-      ?.forEach((state: Record<string, unknown>, index: number) => {
+    reportStates
+      .forEach((state: Record<string, unknown>, index: number) => {
         const isCompleted = completedStates.has(state.id as string);
         const status = isCompleted ? '✅ Completed' : '⏳ Pending';
 
@@ -565,7 +573,7 @@ Describe what happens in this step concisely. Start directly with the action, no
               <Textarea
                 ref={inputRef}
                 placeholder={config.placeholder}
-                className="resize-none border-0 bg-transparent px-4 py-3 pb-14 pr-4 text-sm focus:ring-0 focus:outline-none min-h-[160px] w-full"
+                className="min-h-[180px] w-full resize-none border-0 bg-transparent px-4 py-3 pb-20 pr-4 text-sm focus:outline-none focus:ring-0"
                 disabled={isLoading}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -575,14 +583,14 @@ Describe what happens in this step concisely. Start directly with the action, no
                 }}
               />
               
-              <div className="absolute bottom-3 right-3 left-3 flex items-center justify-between">
+              <div className="absolute bottom-4 right-4 left-4 flex items-center justify-end">
                 <div className="flex-1"></div>
                 <div className="flex items-center gap-2">
                   <div className="flex-shrink-0">
                     <AIProviderSelector 
                       config={aiConfig}
                       onChange={setAiConfig}
-                      className="w-36"
+                      className="w-52 max-w-[min(13rem,calc(100vw-11rem))]"
                     />
                   </div>
                   <Button
@@ -590,9 +598,9 @@ Describe what happens in this step concisely. Start directly with the action, no
                     disabled={isLoading}
                     size="sm"
                     variant="ghost"
-                    className="h-7 w-7 p-0 rounded-full bg-pink-500 hover:bg-pink-600 border-2 border-pink-400 hover:border-pink-500 flex-shrink-0 transition-colors disabled:bg-gray-300 disabled:border-gray-300"
+                    className="h-9 w-9 flex-shrink-0 rounded-full border-2 border-pink-400 bg-pink-500 p-0 transition-colors hover:border-pink-500 hover:bg-pink-600 disabled:border-gray-300 disabled:bg-gray-300"
                   >
-                    <ArrowUp className="h-3.5 w-3.5 text-white" />
+                    <ArrowUp className="h-4 w-4 text-white" />
                   </Button>
                 </div>
               </div>
@@ -719,20 +727,20 @@ Describe what happens in this step concisely. Start directly with the action, no
 
     // Use the original grid layout
     return (
-      <div className={`grid grid-cols-1 gap-4 ${hookReturn.isExpanded ? 'lg:grid-cols-4' : 'lg:grid-cols-5'}`}>
+      <div className={`grid grid-cols-1 gap-4 xl:gap-5 ${hookReturn.isExpanded ? 'lg:grid-cols-4' : 'xl:grid-cols-[minmax(20rem,1fr)_minmax(24rem,1.1fr)_minmax(14rem,0.7fr)]'}`}>
         {/* Main Demo Section */}
-        <div className={`space-y-4 ${hookReturn.isExpanded ? 'lg:col-span-1' : 'lg:col-span-2'} ${hookReturn.isExpanded ? 'hidden lg:block' : ''}`}>
+        <div className={`min-w-0 space-y-4 ${hookReturn.isExpanded ? 'lg:col-span-1' : ''} ${hookReturn.isExpanded ? 'hidden lg:block' : ''}`}>
           {renderMainInputSection()}
           {renderSolutionSection()}
         </div>
 
         {/* States Section */}
-        <div className={`space-y-4 ${hookReturn.isExpanded ? 'lg:col-span-3' : 'lg:col-span-2'}`}>
+        <div className={`min-w-0 space-y-4 ${hookReturn.isExpanded ? 'lg:col-span-3' : ''}`}>
           {renderStatesSection()}
         </div>
 
         {/* Controls Section */}
-        <div className={`space-y-4 ${hookReturn.isExpanded ? 'hidden' : 'lg:col-span-1'}`}>
+        <div className={`min-w-0 space-y-4 ${hookReturn.isExpanded ? 'hidden' : ''}`}>
           {renderControlsSection()}
         </div>
       </div>
@@ -875,7 +883,7 @@ Describe what happens in this step concisely. Start directly with the action, no
             <p className="text-muted-foreground text-sm">
               Executing state machine with original query: <span className="font-medium">&quot;{savedInputValue}&quot;</span>
             </p>
-            {currentExecutionState && (
+            {isExecuting && currentExecutionState && (
               <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                 Current: {currentExecutionState}
               </div>
@@ -888,14 +896,14 @@ Describe what happens in this step concisely. Start directly with the action, no
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Progress</span>
                 <span className="text-gray-500">
-                  {completedStates.size} / {(compiledMachine.stateConfigs as Array<Record<string, unknown>>).filter((s: Record<string, unknown>) => s.type !== 'final').length} steps
+                  {completedStates.size} / {getExecutableStates().length} steps
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-blue-500 h-2 rounded-full transition-all duration-500"
                   style={{
-                    width: `${(completedStates.size / (compiledMachine.stateConfigs as Array<Record<string, unknown>>).filter((s: Record<string, unknown>) => s.type !== 'final').length) * 100}%`
+                    width: `${(completedStates.size / Math.max(getExecutableStates().length, 1)) * 100}%`
                   }}
                 ></div>
               </div>
@@ -919,9 +927,8 @@ Describe what happens in this step concisely. Start directly with the action, no
               )}
               
               {/* Generate checklist from states */}
-              {(compiledMachine?.stateConfigs as Array<Record<string, unknown>> | undefined)
-                ?.filter((state: Record<string, unknown>) => state.type !== 'final')
-                ?.map((state: Record<string, unknown>, index: number) => {
+              {getExecutableStates()
+                .map((state: Record<string, unknown>, index: number) => {
                   const isCompleted = completedStates.has(state.id as string);
                   const isCurrent = currentExecutionState === state.id;
                   const isCollapsed = collapsedStates.has(state.id as string);

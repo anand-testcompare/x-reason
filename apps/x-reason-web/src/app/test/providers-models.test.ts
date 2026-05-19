@@ -1,33 +1,15 @@
-import { OPENAI_MODELS, DEFAULT_OPENAI_MODEL, OpenAIModel } from '@/app/api/ai/providers';
+import { AI_MODELS, AI_MODEL_OPTIONS, DEFAULT_MODEL } from '@/app/api/ai/providers';
 
-describe('OpenAI models configuration', () => {
-  it('should include all latest OpenAI models', () => {
-    const expectedModels: OpenAIModel[] = [
-      'openai/gpt-oss-120b', 'openai/gpt-5-nano', 
-      'openai/gpt-4o-mini', 'openai/gpt-4.1-nano'
-    ];
-
-    expectedModels.forEach(model => {
-      expect(OPENAI_MODELS[model]).toBeDefined();
-      expect(OPENAI_MODELS[model]).toHaveProperty('name');
-      expect(OPENAI_MODELS[model]).toHaveProperty('description');
-    });
+describe('AI model allowlist', () => {
+  it('should only expose the small approved Gateway models', () => {
+    expect(AI_MODEL_OPTIONS.map(model => model.model)).toEqual([
+      'openai/gpt-5.4-nano',
+      'google/gemini-3.1-flash-lite',
+    ]);
   });
 
-  it('should have valid default model', () => {
-    expect(OPENAI_MODELS).toHaveProperty(DEFAULT_OPENAI_MODEL);
-    expect(DEFAULT_OPENAI_MODEL).toBeTruthy();
-    expect(DEFAULT_OPENAI_MODEL).toBe('openai/gpt-oss-120b');
-  });
-
-  it('should have proper model metadata structure', () => {
-    Object.values(OPENAI_MODELS).forEach(model => {
-      expect(model).toHaveProperty('name');
-      expect(model).toHaveProperty('description');
-      expect(typeof model.name).toBe('string');
-      expect(typeof model.description).toBe('string');
-      expect(model.name.length).toBeGreaterThan(0);
-      expect(model.description.length).toBeGreaterThan(0);
-    });
+  it('should default to the OpenAI fast model', () => {
+    expect(DEFAULT_MODEL).toBe('openai/gpt-5.4-nano');
+    expect(AI_MODELS[DEFAULT_MODEL]).toBeDefined();
   });
 });

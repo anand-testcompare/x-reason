@@ -7,4 +7,3 @@ export { RegieDemo } from "./regie/RegieDemo";
 export { MainContent } from "./MainContent";
 export { NavigationProvider } from "./NavigationWrapper";
 export { InspectorInitializer } from "./InspectorInitializer";
-export { CredentialsWrapper } from "./CredentialsWrapper";

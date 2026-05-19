@@ -7,7 +7,6 @@ import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
 import { ChevronDown, ChevronRight, Brain, Workflow, Database } from 'lucide-react';
-import { EngineTypes } from './context/ReasoningDemoContext';
 
 export default function Home() {
   const [showCodeExample, setShowCodeExample] = useState(false);
@@ -198,7 +197,7 @@ email validation and password requirements"`}</code>
                   <Brain className="h-8 w-8 mx-auto mb-2 text-primary" />
                   <h3 className="font-semibold mb-1">AI Reasoning Engine</h3>
                   <p className="text-sm text-muted-foreground">
-                    Multi-provider AI (OpenAI GPT-4o, Gemini 2.0) for task analysis and decomposition
+                    Vercel AI Gateway with OIDC-only access to a small OpenAI and Gemini model allowlist
                   </p>
                 </div>
                 <div className="text-center">
@@ -210,9 +209,9 @@ email validation and password requirements"`}</code>
                 </div>
                 <div className="text-center">
                   <Database className="h-8 w-8 mx-auto mb-2 text-chart-3" />
-                  <h3 className="font-semibold mb-1">Backend Storage</h3>
+                  <h3 className="font-semibold mb-1">Local State</h3>
                   <p className="text-sm text-muted-foreground">
-                    Local memory (with planned support for Palantir OSDK and Convex)
+                    Browser-local saved examples for demo iteration without server-side user data storage
                   </p>
                 </div>
               </div>
@@ -239,7 +238,7 @@ email validation and password requirements"`}</code>
               </CardHeader>
               <CardContent>
                 <Button variant="outline" className="w-full" asChild>
-                  <Link href={`/pages/chemli?engineType=${EngineTypes.CHEMLI}`}>
+                  <Link href="/pages/chemli">
                     View Demo
                   </Link>
                 </Button>
@@ -258,7 +257,7 @@ email validation and password requirements"`}</code>
               </CardHeader>
               <CardContent>
                 <Button variant="outline" className="w-full" asChild>
-                  <Link href={`/pages/chemli?engineType=${EngineTypes.REGIE}`}>
+                  <Link href="/pages/regie">
                     View Demo
                   </Link>
                 </Button>

@@ -1,196 +1,96 @@
-import { createGateway, generateText, streamText, CoreMessage } from 'ai';
+import { generateText, streamText, CoreMessage } from 'ai';
 import { AILogger } from "../../utils/aiLogger";
 
-export type AIProvider = 'openai' | 'gemini' | 'xai';
-
-/**
- * OpenAI model configuration
- * - openai/gpt-oss-120b: Open source 120B parameter model (Primary default)
- * - openai/gpt-4o-mini: Cost-effective GPT-4o variant
- * - openai/gpt-5-nano: Ultra-fast, lightweight model for simple tasks
- * - openai/gpt-4.1-nano: Compact 4.1 model for efficiency
- */
-export type OpenAIModel =
-  | 'openai/gpt-oss-120b'
-  | 'openai/gpt-4o-mini'
-  | 'openai/gpt-5-nano'
-  | 'openai/gpt-4.1-nano';
-
-/**
- * Google Gemini model configuration
- * - google/gemini-2.0-flash: Latest model, balanced speed and quality
- * - google/gemini-2.5-flash-lite: Ultra-fast, lightweight, lower cost
- * - google/gemini-2.5-flash: Enhanced 2.5 model with improved capabilities
- */
-export type GeminiModel =
-  | 'google/gemini-2.0-flash'
-  | 'google/gemini-2.5-flash-lite'
-  | 'google/gemini-2.5-flash';
-
-/**
- * XAI Grok models - Approved fast models only
- */
-export type XAIModel =
-  | 'xai/grok-4-fast-non-reasoning'
-  | 'xai/grok-code-fast-1';
+export type AIProvider = 'openai' | 'gemini';
+export type AIModel = 'openai/gpt-5.4-nano' | 'google/gemini-3.1-flash-lite';
 
 export interface AIMessage extends Record<string, unknown> {
   role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
-export interface AICredentials {
-  openaiApiKey?: string;
-  geminiApiKey?: string;
-}
-
 export interface AIConfig {
   provider: AIProvider;
-  model?: OpenAIModel | GeminiModel | XAIModel;
-  credentials?: AICredentials;
+  model?: AIModel;
 }
 
 export interface ModelInfo {
+  provider: AIProvider;
+  model: AIModel;
   name: string;
   description: string;
-  speed?: string;
-  costTier?: string;
 }
 
-export const OPENAI_MODELS: Record<OpenAIModel, ModelInfo> = {
-  'openai/gpt-oss-120b': { 
-    name: 'GPT-OSS 120B', 
-    description: 'Open source 120B parameter model (Primary default)',
-    speed: 'fast',
-    costTier: 'medium'
+export const AI_MODELS: Record<AIModel, ModelInfo> = {
+  'openai/gpt-5.4-nano': {
+    provider: 'openai',
+    model: 'openai/gpt-5.4-nano',
+    name: 'GPT-5.4 Nano',
+    description: 'Default fast, low-cost model for lightweight reasoning tasks',
   },
-  'openai/gpt-4o-mini': { 
-    name: 'GPT-4o Mini', 
-    description: 'Cost-effective GPT-4o variant',
-    speed: 'fast',
-    costTier: 'low'
-  },
-  'openai/gpt-5-nano': { 
-    name: 'GPT-5 Nano', 
-    description: 'Ultra-fast, lightweight model for simple tasks',
-    speed: 'very-fast',
-    costTier: 'low'
-  },
-  'openai/gpt-4.1-nano': { 
-    name: 'GPT-4.1 Nano', 
-    description: 'Compact 4.1 model for efficiency',
-    speed: 'fast',
-    costTier: 'low'
+  'google/gemini-3.1-flash-lite': {
+    provider: 'gemini',
+    model: 'google/gemini-3.1-flash-lite',
+    name: 'Gemini 3.1 Flash Lite',
+    description: 'Small Gemini comparison model for fast Gateway runs',
   },
 } as const;
 
-export const GEMINI_MODELS: Record<GeminiModel, ModelInfo> = {
-  'google/gemini-2.0-flash': { 
-    name: 'Gemini 2.0 Flash', 
-    description: 'Latest model, balanced speed and quality',
-    speed: 'fast',
-    costTier: 'low'
-  },
-  'google/gemini-2.5-flash-lite': { 
-    name: 'Gemini 2.5 Flash Lite', 
-    description: 'Ultra-fast, lightweight, lower cost',
-    speed: 'very-fast',
-    costTier: 'low'
-  },
-  'google/gemini-2.5-flash': { 
-    name: 'Gemini 2.5 Flash', 
-    description: 'Enhanced 2.5 model with improved capabilities',
-    speed: 'fast',
-    costTier: 'medium'
-  },
-} as const;
+export const AI_MODEL_OPTIONS = Object.values(AI_MODELS);
 
-export const XAI_MODELS: Record<XAIModel, ModelInfo> = {
-  'xai/grok-4-fast-non-reasoning': {
-    name: 'Grok 4 Fast (Non-Reasoning)',
-    description: 'Fast Grok model without reasoning capabilities',
-    speed: 'fast',
-    costTier: 'low'
-  },
-  'xai/grok-code-fast-1': {
-    name: 'Grok Code Fast 1',
-    description: 'Fast code-optimized Grok model',
-    speed: 'very-fast',
-    costTier: 'low'
-  },
-} as const;
+export const DEFAULT_MODEL: AIModel = 'openai/gpt-5.4-nano';
+export const DEFAULT_PROVIDER: AIProvider = 'openai';
 
-export const DEFAULT_OPENAI_MODEL: OpenAIModel = 'openai/gpt-oss-120b';
-export const DEFAULT_GEMINI_MODEL: GeminiModel = 'google/gemini-2.0-flash';
-export const DEFAULT_XAI_MODEL: XAIModel = 'xai/grok-4-fast-non-reasoning';
-
-// Primary default model (GPT OSS 120B)
-export const PRIMARY_DEFAULT_MODEL = DEFAULT_OPENAI_MODEL;
-export const PRIMARY_DEFAULT_PROVIDER: AIProvider = 'openai';
-
-// Default models for each provider
-const DEFAULT_MODELS: Record<AIProvider, OpenAIModel | GeminiModel | XAIModel> = {
-  openai: DEFAULT_OPENAI_MODEL,
-  gemini: DEFAULT_GEMINI_MODEL,
-  xai: DEFAULT_XAI_MODEL,
+const DEFAULT_MODELS: Record<AIProvider, AIModel> = {
+  openai: DEFAULT_MODEL,
+  gemini: 'google/gemini-3.1-flash-lite',
 };
 
-export function getModelForProvider(provider: AIProvider, model?: OpenAIModel | GeminiModel | XAIModel): string {
-  // Only use default if no model is explicitly provided
+function assertSupportedModel(model: string): asserts model is AIModel {
+  if (!Object.hasOwn(AI_MODELS, model)) {
+    throw new Error(`Unsupported AI model: ${model}`);
+  }
+}
+
+export function getModelForProvider(provider: AIProvider, model?: AIModel): AIModel {
   if (model) {
+    assertSupportedModel(model);
     return model;
   }
+
   return DEFAULT_MODELS[provider];
 }
 
-/**
- * Initialize AI Gateway instance with proper configuration.
- *
- * The AI Gateway provides unified access to multiple AI providers (OpenAI, Google, XAI, etc.)
- * through authentication via API key or OIDC token.
- *
- * Authentication priority:
- * 1. Explicit apiKey parameter
- * 2. AI_GATEWAY_API_KEY environment variable (required for preview/production)
- * 3. VERCEL_OIDC_TOKEN environment variable (auto-injected in production only)
- *
- * @param apiKey - Optional API key (defaults to environment variables)
- * @throws Error if no authentication method is available
- */
-function getGatewayInstance(apiKey?: string) {
-  // Priority: explicit param > AI_GATEWAY_API_KEY > VERCEL_OIDC_TOKEN (Vercel-only)
-  const isVercelEnv = !!process.env.VERCEL;
-  const oidcToken = isVercelEnv ? process.env.VERCEL_OIDC_TOKEN : undefined;
-  const key = apiKey || process.env.AI_GATEWAY_API_KEY || oidcToken;
+const OIDC_HEADER = 'x-vercel-oidc-token';
 
-  // Debug logging
-  console.log('🔑 [AUTH] Authentication check:', {
-    hasExplicitKey: !!apiKey,
-    hasGatewayKey: !!process.env.AI_GATEWAY_API_KEY,
-    hasOIDCToken: !!oidcToken,
-    isVercelEnv,
-    finalKeyAvailable: !!key
-  });
-
-  if (!key) {
-    throw new Error(
-      'AI Gateway authentication required. For local development, set AI_GATEWAY_API_KEY in .env.local. ' +
-      'For Vercel deployments, VERCEL_OIDC_TOKEN is automatically injected. ' +
-      'Get your API key from: https://vercel.com/docs/ai-gateway/getting-started'
-    );
+function disableGatewayApiKeyFallback() {
+  if (process.env.AI_GATEWAY_API_KEY) {
+    console.warn('Ignoring AI_GATEWAY_API_KEY; x-reason uses Vercel OIDC for AI Gateway auth.');
+    delete process.env.AI_GATEWAY_API_KEY;
   }
+}
 
-  return createGateway({
-    apiKey: key,
-    baseURL: process.env.AI_GATEWAY_BASE_URL,
-  });
+export function hasGatewayAuth(headers?: Headers | null): boolean {
+  return Boolean(
+    process.env.VERCEL_OIDC_TOKEN ||
+    headers?.has(OIDC_HEADER)
+  );
+}
+
+export function getGatewayAvailability(headers?: Headers | null): Record<AIProvider, boolean> {
+  const hasAuth = hasGatewayAuth(headers);
+
+  return {
+    openai: hasAuth,
+    gemini: hasAuth,
+  };
 }
 
 /**
  * Get the AI SDK model instance using AI Gateway.
  *
  * The Gateway handles all provider routing automatically based on the model string format.
- * Model strings use "creator/model-name" format (e.g., "openai/gpt-5-mini", "google/gemini-2.0-flash")
+ * Model strings use "creator/model-name" format (e.g., "openai/gpt-5.4-nano", "google/gemini-3.1-flash-lite")
  *
  * @param config - AI configuration including provider and model
  * @returns AI SDK model instance ready for generateText/streamText
@@ -198,27 +98,19 @@ function getGatewayInstance(apiKey?: string) {
 export function getAIModel(config: AIConfig) {
   const { provider, model } = config;
   
-  // Validate provider before proceeding
-  if (!['openai', 'gemini', 'xai'].includes(provider)) {
+  if (!['openai', 'gemini'].includes(provider)) {
     throw new Error(`Unsupported AI provider: ${provider}`);
   }
   
   const modelName = getModelForProvider(provider, model);
 
-  // Initialize Gateway instance (validates AI_GATEWAY_API_KEY)
-  const gatewayInstance = getGatewayInstance();
+  if (AI_MODELS[modelName].provider !== provider) {
+    throw new Error(`Model ${modelName} is not supported for provider ${provider}`);
+  }
 
-  // Use Gateway with model string in "creator/model-name" format
-  // The Gateway automatically routes to the correct provider
-  return gatewayInstance(modelName);
-}
+  disableGatewayApiKeyFallback();
 
-/**
- * Get Gateway instance (for compatibility with existing code)
- * @deprecated Use getAIModel directly instead
- */
-export function getProvider(_provider: AIProvider, _model?: string) {
-  return getGatewayInstance();
+  return modelName;
 }
 
 // Convert AIMessage to CoreMessage format

@@ -65,6 +65,7 @@ export function Navigation() {
                      alt="X-Reason" 
                      width={60} 
                      height={60} 
+                     priority
                      className="object-contain"
                    />
                  </div>

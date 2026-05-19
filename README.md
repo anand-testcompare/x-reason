@@ -40,29 +40,29 @@ X-Reason is an innovative prototype that demonstrates how AI can dynamically ass
 **Recent architectural changes** (as of v0.3.0):
 
 ### Gateway-Only Authentication (NEW!)
-- **Unified Access**: Now uses **Vercel AI Gateway** for all AI providers
-- **Single API Key**: `AI_GATEWAY_API_KEY` replaces provider-specific keys
+- **Unified Access**: Now uses **Vercel AI Gateway** for the approved model allowlist
+- **OIDC First**: `VERCEL_OIDC_TOKEN` works for Vercel deployments and linked local projects
+- **No Gateway API Key**: `AI_GATEWAY_API_KEY` is intentionally unsupported
 - **Cost Control**: Built-in rate limiting and usage monitoring
 - **Deprecated Keys**: `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `XAI_API_KEY` no longer supported
 
-### Provider Consolidation
-- **Unified AI SDK**: All AI provider interactions now use [Vercel AI SDK](https://sdk.vercel.ai/) (`ai`, `@ai-sdk/openai`, `@ai-sdk/google`)
-- **Three Providers**: OpenAI, Google Gemini, and X.AI (Grok) supported
+### Model Consolidation
+- **Unified AI SDK**: AI calls use plain Vercel AI SDK Gateway model IDs
+- **Tiny Allowlist**: Only `openai/gpt-5.4-nano` and `google/gemini-3.1-flash-lite` are exposed
 - **Removed Routes**: Legacy `/api/openai/` and `/api/gemini/` directories have been deleted
 - **New Endpoint**: Use unified `/api/ai/chat` for all AI interactions
 - **Centralized Config**: All provider setup in `apps/x-reason-web/src/app/api/ai/providers.ts`
 
 ### Action Items for Existing Contributors
 1. **Remove old keys** from `.env.local`: `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`
-2. **Add Gateway key**: `AI_GATEWAY_API_KEY=your_gateway_key_here`
+2. **Use Gateway auth**: run `pnpm dlx vercel@latest link && pnpm dlx vercel@latest env pull apps/x-reason-web/.env.local`
 3. Clear browser localStorage to remove old client-side credentials
 4. Update any custom integrations to use `/api/ai/chat` instead of legacy provider-specific routes
 5. Run `pnpm install` to ensure Vercel AI SDK dependencies are installed
 
-See [AI_SDK_VERIFICATION.md](apps/x-reason-web/AI_SDK_VERIFICATION.md) for detailed migration instructions.
+See [ENV_CONFIG.md](apps/x-reason-web/docs/ENV_CONFIG.md) for detailed migration instructions.
 
 For detailed technical documentation, see:
-- [AGENTS.md](AGENTS.md) - Updated agent interaction patterns
 - [apps/x-reason-web/src/app/api/reasoning/README.md](apps/x-reason-web/src/app/api/reasoning/README.md) - Reasoning engine documentation
 
 ## Video Demo
@@ -76,7 +76,7 @@ For detailed technical documentation, see:
 ## Features
 
 - **Dynamic State Machine Generation**: Convert AI-generated task lists into executable XState machines
-- **Multi-AI Provider Support**: Seamlessly switch between OpenAI, Google Gemini, and X.AI (Grok)
+- **Small Model Switcher**: Switch between one OpenAI default and one Gemini comparison model
 - **Real-time Streaming**: Server-sent events for live AI response streaming
 - **Domain-Specific Workflows**: Pre-built demos for chemical engineering (Chemli) and user registration (Regie)
 - **Modern UI**: Tailwind CSS with shadcn/ui components for a clean, responsive interface
@@ -88,10 +88,9 @@ For detailed technical documentation, see:
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.9+
 - pnpm (recommended) or npm
-- Vercel AI Gateway API key (recommended for unified access to all providers)
-  - Get your key from: [Vercel AI Gateway](https://vercel.com/docs/ai-gateway)
+- Vercel AI Gateway auth: OIDC via `pnpm dlx vercel@latest env pull`
 
 ### Installation
 
@@ -113,21 +112,17 @@ npm install
 Create a `.env.local` file in the `apps/x-reason-web/` directory:
 
 ```bash
-# Vercel AI Gateway Configuration (REQUIRED)
-# Get your key from: https://vercel.com/docs/ai-gateway
-AI_GATEWAY_API_KEY=your_gateway_api_key_here
-
-# Optional: Custom Gateway Base URL
-# AI_GATEWAY_BASE_URL=https://your-custom-gateway.vercel.app
+# Pulled from a linked Vercel project
+VERCEL_OIDC_TOKEN=your_oidc_token_here
 ```
 
 **Gateway Benefits**:
-- Single API key for OpenAI, Google Gemini, and X.AI
+- Single auth path for the approved Gateway models
 - Built-in rate limiting and cost monitoring
 - Simplified credential management
 - Server-side only (no client-side exposure)
 
-See [AI_SDK_VERIFICATION.md](apps/x-reason-web/AI_SDK_VERIFICATION.md) for verification steps and troubleshooting.
+See [LOCAL_SETUP.md](apps/x-reason-web/docs/LOCAL_SETUP.md) for verification steps and troubleshooting.
 
 ### Running the Application
 
@@ -167,11 +162,10 @@ pnpm run lint
    - Maintains context across execution steps
    - Enables real-time streaming support
 
-2. **AI Provider System** (`src/app/api/ai/`)
-   - Unified interface for multiple AI providers
-   - Provider-specific adapters
+2. **AI Gateway System** (`src/app/api/ai/`)
+   - Tiny model allowlist
+   - Plain Gateway model IDs
    - Streaming response support
-   - Automatic fallback handling
 
 3. **Domain-Specific Components**
    - **Chemli** (`src/app/components/chemli/`): Chemical product engineering workflows
@@ -179,21 +173,20 @@ pnpm run lint
 
 ### AI Provider Integration
 
-The application uses the **Vercel AI SDK** for unified multi-provider support:
+The application uses the **Vercel AI SDK** with a deliberately tiny Gateway model allowlist:
 
 - **Architecture**: Centralized provider configuration in `src/app/api/ai/providers.ts`
-- **Supported Providers** (via Gateway):
-  - **OpenAI**: GPT-5 Mini, GPT-5 Nano, GPT-OSS 120B, GPT-4o Mini, GPT-4.1 Nano
-  - **Google Gemini**: Gemini 2.0 Flash, Gemini 2.5 Flash, Gemini 2.5 Flash Lite
-  - **X.AI (Grok)**: Grok 4 Fast (Non-Reasoning), Grok 4 Fast (Reasoning), Grok Code Fast 1
+- **Supported Models**:
+  - **Default**: `openai/gpt-5.4-nano`
+  - **Comparison**: `google/gemini-3.1-flash-lite`
 - **Features**:
-  - Gateway-only authentication (AI_GATEWAY_API_KEY)
+  - Gateway-only authentication (`VERCEL_OIDC_TOKEN`)
   - Streaming responses via `streamText()`
   - Server-side credential management
-  - Runtime provider switching
+  - Runtime model switching
   - Cost control through Gateway
 
-All providers accessed through Vercel AI Gateway with a single API key.
+Approved models are accessed through Vercel AI Gateway OIDC auth.
 
 ### State Machine System
 
@@ -240,20 +233,19 @@ const registrationMachine = machineMacro(taskMap);
 
 ## Recent Updates
 
-- **Vercel AI SDK Integration**: Migrated to unified AI SDK for all provider interactions
-- **Server-Side Credentials**: Removed client credential prompts, all keys managed server-side
-- **Next.js 15**: Upgraded from v14 with Turbopack support
+- **Vercel AI Gateway**: Uses plain Gateway model IDs with OIDC/API-key auth
+- **Tiny Model Allowlist**: Exposes only `openai/gpt-5.4-nano` and `google/gemini-3.1-flash-lite`
+- **Server-Side Credentials**: Removed client credential prompts, all secrets stay server-side
+- **Next.js 16**: Uses the App Router with Turbopack builds
 - **XState v5**: Migrated from v4 with improved APIs
-- **Multi-AI Providers**: Added Google Gemini alongside OpenAI
 - **Modern UI**: Replaced Blueprint.js with Tailwind CSS + shadcn/ui
 - **Streaming**: Real-time AI responses via Server-Sent Events
-- **Enhanced DX**: Better TypeScript support and error handling
 
 ## API Documentation
 
 ### AI Endpoints
 
-- `POST /api/ai/chat` - Unified streaming chat endpoint for all providers (powered by Vercel AI SDK)
+- `POST /api/ai/chat` - Unified streaming chat endpoint for the approved Gateway models
 - `POST /api/reasoning/stream` - Reasoning engine streaming endpoint
 
 ### State Machine API

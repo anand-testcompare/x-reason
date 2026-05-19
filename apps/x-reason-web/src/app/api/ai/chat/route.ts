@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getAIModel, getModelForProvider, AIConfig, AIMessage } from "../providers";
+import { getAIModel, getModelForProvider, AIConfig, AIMessage, DEFAULT_PROVIDER } from "../providers";
 import { streamText, generateText } from 'ai';
 import { AILogger } from "../../../utils/aiLogger";
 
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { messages, provider = 'gemini', model, credentials, stream = true } = body;
+    const { messages, provider = DEFAULT_PROVIDER, model, stream = true } = body;
 
     console.log(`🌐 [API-ROUTE] Request details: provider=${provider}, model=${model || 'default'}, messages=${messages?.length || 0}, stream=${stream} (Request ID: ${requestId})`);
 
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const validProviders = ['openai', 'gemini', 'xai'];
+    const validProviders = ['openai', 'gemini'];
     if (!validProviders.includes(provider)) {
       console.log(`🌐 [API-ROUTE] Bad request: Invalid provider ${provider} (Request ID: ${requestId})`);
       return new Response(
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const config: AIConfig = { provider, model, credentials };
+    const config: AIConfig = { provider, model };
     const aiModel = getAIModel(config);
     const actualModel = getModelForProvider(provider, model);
 
