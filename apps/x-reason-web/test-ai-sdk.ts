@@ -1,137 +1,69 @@
 #!/usr/bin/env node
 
 /**
- * Test script to verify Vercel AI SDK integration with OpenAI and Google Gemini
+ * Gateway-only smoke test for Vercel AI SDK integration.
  * Run with: tsx test-ai-sdk.ts
  */
 
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { generateText } from 'ai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 dotenv.config({ path: join(__dirname, '.env.local') });
 
-async function testOpenAI(): Promise<boolean> {
-  console.log('\n🧪 Testing OpenAI with Vercel AI SDK...');
-  console.log('API Key present:', !!process.env.OPENAI_API_KEY);
+const smokeTests = [
+  {
+    name: 'OpenAI fast default',
+    model: 'openai/gpt-5.4-nano',
+    prompt: 'Say "Hello from OpenAI Gateway!" and nothing else.',
+  },
+  {
+    name: 'Gemini fast default',
+    model: 'google/gemini-3.1-flash-lite',
+    prompt: 'Say "Hello from Gemini Gateway!" and nothing else.',
+  },
+] as const;
+
+async function runSmokeTest(test: (typeof smokeTests)[number]): Promise<boolean> {
+  console.log(`\nTesting ${test.name} (${test.model})...`);
 
   try {
-    const { createOpenAI } = await import('@ai-sdk/openai');
-    const { generateText } = await import('ai');
-
-    const openai = createOpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
-    const model = openai('gpt-4o-mini');
-
     const { text } = await generateText({
-      model,
-      messages: [
-        { role: 'user', content: 'Say "Hello from OpenAI!" and nothing else.' }
-      ],
+      model: test.model,
+      messages: [{ role: 'user', content: test.prompt }],
     });
 
-    console.log('✅ OpenAI Response:', text);
+    console.log('Response:', text);
     return true;
-  } catch (error: any) {
-    console.error('❌ OpenAI Error:', error.message);
-    if (error.response) {
-      console.error('   Status:', error.response.status);
-      console.error('   Data:', JSON.stringify(error.response.data, null, 2));
-    }
-    return false;
-  }
-}
-
-async function testGemini(): Promise<boolean> {
-  console.log('\n🧪 Testing Google Gemini with Vercel AI SDK...');
-  console.log('API Key present:', !!process.env.GOOGLE_GENERATIVE_AI_API_KEY);
-
-  try {
-    const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
-    const { generateText } = await import('ai');
-
-    const google = createGoogleGenerativeAI({
-      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    });
-
-    const model = google('gemini-2.0-flash-exp');
-
-    const { text } = await generateText({
-      model,
-      messages: [
-        { role: 'user', content: 'Say "Hello from Gemini!" and nothing else.' }
-      ],
-    });
-
-    console.log('✅ Gemini Response:', text);
-    return true;
-  } catch (error: any) {
-    console.error('❌ Gemini Error:', error.message);
-    if (error.response) {
-      console.error('   Status:', error.response.status);
-      console.error('   Data:', JSON.stringify(error.response.data, null, 2));
-    }
-    return false;
-  }
-}
-
-async function testProviders(): Promise<boolean> {
-  console.log('\n🧪 Testing providers module...');
-
-  try {
-    const { aiGenerateContent } = await import('./src/app/api/ai/providers.js');
-
-    console.log('\nTesting OpenAI via providers module...');
-    const openaiResult = await aiGenerateContent('Say "Hello from providers!" and nothing else.', {
-      provider: 'openai',
-      model: 'gpt-4o-mini'
-    });
-    console.log('✅ OpenAI (via providers):', openaiResult);
-
-    console.log('\nTesting Gemini via providers module...');
-    const geminiResult = await aiGenerateContent('Say "Hello from providers!" and nothing else.', {
-      provider: 'gemini',
-      model: 'gemini-2.0-flash-exp'
-    });
-    console.log('✅ Gemini (via providers):', geminiResult);
-
-    return true;
-  } catch (error: any) {
-    console.error('❌ Providers Module Error:', error.message);
-    console.error('   Stack:', error.stack);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Error:', message);
     return false;
   }
 }
 
 async function main() {
-  console.log('🚀 Vercel AI SDK Integration Test\n');
-  console.log('Environment:');
-  console.log('- OpenAI API Key:', process.env.OPENAI_API_KEY ? `${process.env.OPENAI_API_KEY.substring(0, 10)}...` : 'NOT SET');
-  console.log('- Gemini API Key:', process.env.GOOGLE_GENERATIVE_AI_API_KEY ? `${process.env.GOOGLE_GENERATIVE_AI_API_KEY.substring(0, 10)}...` : 'NOT SET');
+  const hasGatewayAuth = !!process.env.VERCEL_OIDC_TOKEN;
 
-  const results = {
-    openai: await testOpenAI(),
-    gemini: await testGemini(),
-    providers: await testProviders(),
-  };
+  console.log('Vercel AI Gateway smoke test');
+  console.log('Gateway auth present:', hasGatewayAuth);
 
-  console.log('\n📊 Test Results:');
-  console.log('- OpenAI Direct:', results.openai ? '✅ PASS' : '❌ FAIL');
-  console.log('- Gemini Direct:', results.gemini ? '✅ PASS' : '❌ FAIL');
-  console.log('- Providers Module:', results.providers ? '✅ PASS' : '❌ FAIL');
+  if (!hasGatewayAuth) {
+    console.error('Set VERCEL_OIDC_TOKEN before running this script.');
+    process.exit(1);
+  }
 
-  const allPassed = Object.values(results).every(r => r === true);
-  console.log('\n' + (allPassed ? '✅ All tests passed!' : '❌ Some tests failed'));
-
-  process.exit(allPassed ? 0 : 1);
+  const results = await Promise.all(smokeTests.map(runSmokeTest));
+  process.exit(results.every(Boolean) ? 0 : 1);
 }
 
 main().catch(error => {
-  console.error('\n💥 Fatal error:', error);
+  console.error('Fatal error:', error);
   process.exit(1);
 });
+
+export {};

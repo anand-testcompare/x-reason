@@ -1,16 +1,16 @@
 import { NextRequest } from 'next/server';
-import { getAIModel, AIConfig } from "../../ai/providers";
+import { getAIModel, AIConfig, DEFAULT_PROVIDER } from "../../ai/providers";
 import { streamText } from 'ai';
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, provider = 'gemini', model, credentials } = await request.json();
+    const { query, provider = DEFAULT_PROVIDER, model } = await request.json();
 
     if (!query) {
       return new Response('Query is required', { status: 400 });
     }
 
-    const config: AIConfig = { provider, model, credentials };
+    const config: AIConfig = { provider, model };
     const aiModel = getAIModel(config);
 
     // Create a custom SSE stream

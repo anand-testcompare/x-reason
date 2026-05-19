@@ -8,7 +8,7 @@ This project supports both streaming and non-streaming AI responses using the Ve
 - Uses `streamText()` for streaming responses
 - Uses `generateText()` for non-streaming responses
 - Returns `toTextStreamResponse()` for streaming
-- Supports both `AI_GATEWAY_API_KEY` (local) and `VERCEL_OIDC_TOKEN` (Vercel deployments)
+- Authenticates with `VERCEL_OIDC_TOKEN`
 
 ### Client-Side (`utils/streamAI.ts`)
 - `streamAICompletion()` - Consumes text streams with chunk-by-chunk callbacks

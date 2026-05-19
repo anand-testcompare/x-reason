@@ -39,7 +39,7 @@ describe('AILogger', () => {
         { role: 'user', content: 'User message' }
       ];
       
-      AILogger.logRequest('gemini', 'gemini-2.5-flash', messages, 'test-req-123');
+      AILogger.logRequest('gemini', 'google/gemini-3.1-flash-lite', messages, 'test-req-123');
       
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('🤖 [AI-GEMINI]'),
@@ -51,7 +51,7 @@ describe('AILogger', () => {
     it('should handle empty messages array', () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       
-      AILogger.logRequest('openai', 'o4-mini', [], 'test-req-456');
+      AILogger.logRequest('openai', 'openai/gpt-5.4-nano', [], 'test-req-456');
       
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
@@ -62,7 +62,7 @@ describe('AILogger', () => {
     it('should log response with duration', () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       
-      AILogger.logResponse('gemini', 'gemini-2.5-flash', 'Test response', 1500, 'test-req-789');
+      AILogger.logResponse('gemini', 'google/gemini-3.1-flash-lite', 'Test response', 1500, 'test-req-789');
       
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('🤖 [AI-GEMINI]')
@@ -74,7 +74,7 @@ describe('AILogger', () => {
     it('should warn on slow responses', () => {
       const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
       
-      AILogger.logResponse('openai', 'o4-mini', 'Slow response', 15000, 'test-req-slow');
+      AILogger.logResponse('openai', 'openai/gpt-5.4-nano', 'Slow response', 15000, 'test-req-slow');
       
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('⚠️ [AI-PERFORMANCE] Slow response')
@@ -89,7 +89,7 @@ describe('AILogger', () => {
       const errorSpy = jest.spyOn(console, 'error').mockImplementation();
       const testError = new Error('Test error');
       
-      AILogger.logError('gemini', 'gemini-2.5-flash', testError, 'test-req-error');
+      AILogger.logError('gemini', 'google/gemini-3.1-flash-lite', testError, 'test-req-error');
       
       expect(errorSpy).toHaveBeenCalledWith(
         expect.stringContaining('🤖 [AI-GEMINI]')

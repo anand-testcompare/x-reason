@@ -1,11 +1,9 @@
 /**
  * Tests for credentials check logic
- * Story 005: Fix GEMINI_API_KEY → GOOGLE_GENERATIVE_AI_API_KEY
- *
- * Note: Testing the logic directly rather than the route to avoid Next.js mocking complexity
+ * Note: Testing the logic directly rather than the route to avoid Next.js mocking complexity.
  */
 
-describe('credentials check logic (Story 005)', () => {
+describe('credentials check logic', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -18,58 +16,56 @@ describe('credentials check logic (Story 005)', () => {
     process.env = originalEnv;
   });
 
-  it('should detect GOOGLE_GENERATIVE_AI_API_KEY for Gemini', () => {
+  function getAvailability() {
+    const hasGatewayAuth = !!process.env.VERCEL_OIDC_TOKEN;
+    return {
+      openai: hasGatewayAuth,
+      gemini: hasGatewayAuth,
+    };
+  }
+
+  it('should not expose direct provider keys when gateway auth is missing', () => {
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'test-gemini-key';
+    process.env.OPENAI_API_KEY = 'test-openai-key';
     delete process.env.AI_GATEWAY_API_KEY;
-    delete process.env.OPENAI_API_KEY;
+    delete process.env.VERCEL_OIDC_TOKEN;
 
-    const hasServerCredentials = {
-      openai: !!process.env.AI_GATEWAY_API_KEY || !!process.env.OPENAI_API_KEY,
-      gemini: !!process.env.AI_GATEWAY_API_KEY || !!process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    };
-
-    expect(hasServerCredentials.gemini).toBe(true);
-    expect(hasServerCredentials.openai).toBe(false);
-  });
-
-  it('should return false when GOOGLE_GENERATIVE_AI_API_KEY is missing', () => {
-    delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    delete process.env.AI_GATEWAY_API_KEY;
-    delete process.env.OPENAI_API_KEY;
-
-    const hasServerCredentials = {
-      openai: !!process.env.AI_GATEWAY_API_KEY || !!process.env.OPENAI_API_KEY,
-      gemini: !!process.env.AI_GATEWAY_API_KEY || !!process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    };
+    const hasServerCredentials = getAvailability();
 
     expect(hasServerCredentials.gemini).toBe(false);
     expect(hasServerCredentials.openai).toBe(false);
   });
 
-  it('should detect AI_GATEWAY_API_KEY for all providers', () => {
+  it('should return false when gateway auth is missing', () => {
+    delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    delete process.env.AI_GATEWAY_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.VERCEL_OIDC_TOKEN;
+
+    const hasServerCredentials = getAvailability();
+
+    expect(hasServerCredentials.gemini).toBe(false);
+    expect(hasServerCredentials.openai).toBe(false);
+  });
+
+  it('should ignore AI_GATEWAY_API_KEY without OIDC', () => {
     process.env.AI_GATEWAY_API_KEY = 'test-gateway-key';
     delete process.env.OPENAI_API_KEY;
     delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    delete process.env.VERCEL_OIDC_TOKEN;
 
-    const hasServerCredentials = {
-      openai: !!process.env.AI_GATEWAY_API_KEY || !!process.env.OPENAI_API_KEY,
-      gemini: !!process.env.AI_GATEWAY_API_KEY || !!process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    };
+    const hasServerCredentials = getAvailability();
 
-    expect(hasServerCredentials.gemini).toBe(true);
-    expect(hasServerCredentials.openai).toBe(true);
+    expect(hasServerCredentials.gemini).toBe(false);
+    expect(hasServerCredentials.openai).toBe(false);
   });
 
-  it('should prioritize AI_GATEWAY_API_KEY when both are set', () => {
-    process.env.AI_GATEWAY_API_KEY = 'test-gateway-key';
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'test-gemini-key';
+  it('should detect VERCEL_OIDC_TOKEN for approved providers', () => {
+    delete process.env.AI_GATEWAY_API_KEY;
+    process.env.VERCEL_OIDC_TOKEN = 'test-oidc-token';
 
-    const hasServerCredentials = {
-      openai: !!process.env.AI_GATEWAY_API_KEY || !!process.env.OPENAI_API_KEY,
-      gemini: !!process.env.AI_GATEWAY_API_KEY || !!process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    };
+    const hasServerCredentials = getAvailability();
 
-    // Both should show as available since AI_GATEWAY_API_KEY covers all providers
     expect(hasServerCredentials.gemini).toBe(true);
     expect(hasServerCredentials.openai).toBe(true);
   });

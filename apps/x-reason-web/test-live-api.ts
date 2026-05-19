@@ -93,8 +93,8 @@ async function runLiveTests() {
   }
 
   const results = {
-    openai: await testChatAPI('openai', 'gpt-4o-mini', 'Say "Hello from OpenAI API!" and nothing else.'),
-    gemini: await testChatAPI('gemini', 'gemini-2.0-flash-exp', 'Say "Hello from Gemini API!" and nothing else.'),
+    openai: await testChatAPI('openai', 'openai/gpt-5.4-nano', 'Say "Hello from OpenAI Gateway!" and nothing else.'),
+    gemini: await testChatAPI('gemini', 'google/gemini-3.1-flash-lite', 'Say "Hello from Gemini Gateway!" and nothing else.'),
   };
 
   console.log('\n📊 Test Results:');
@@ -111,3 +111,5 @@ runLiveTests().catch(error => {
   console.error('\n💥 Fatal error:', error);
   process.exit(1);
 });
+
+export {};
