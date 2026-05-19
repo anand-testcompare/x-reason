@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Navigation, NavigationProvider, MainContent, InspectorInitializer, CredentialsWrapper } from './components'
+import { Navigation, NavigationProvider, MainContent, InspectorInitializer } from './components'
 import { Analytics } from "@vercel/analytics/next"
 
 const inter = Inter({ subsets: ['latin'] })
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+  ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
 export const metadata: Metadata = {
   title: 'X-Reason - AI-Driven State Machine Generation',
@@ -13,7 +15,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'X-Reason Team' }],
   creator: 'X-Reason',
   publisher: 'X-Reason',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'),
+  metadataBase: new URL(siteUrl),
   alternates: {
     canonical: '/',
   },
@@ -76,15 +78,13 @@ export default function RootLayout({
           padding: 0 
         }}
       >
-        <CredentialsWrapper>
-          <NavigationProvider>
-            <InspectorInitializer />
-            <Navigation />
-            <MainContent>
-              {children}
-            </MainContent>
-          </NavigationProvider>
-        </CredentialsWrapper>
+        <NavigationProvider>
+          <InspectorInitializer />
+          <Navigation />
+          <MainContent>
+            {children}
+          </MainContent>
+        </NavigationProvider>
         <Analytics />
       </body>
     </html>
