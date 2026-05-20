@@ -36,6 +36,45 @@ interface StateMachineConfig {
   states?: Record<string, unknown>;
 }
 
+type TransitionTarget = string | { target?: string } | Array<{ target?: string } | string>;
+
+type MermaidStateConfig = {
+  on?: Record<string, TransitionTarget>;
+  onDone?: TransitionTarget;
+  states?: Record<string, unknown>;
+};
+
+const INTERNAL_STATE_NAMES = new Set(['pending', 'success', 'failure', 'pause']);
+
+function getStateNodeId(name: string) {
+  return `state_${name.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+}
+
+function getStateLabel(name: string) {
+  return name.replace(/\|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, '');
+}
+
+function getTransitionTargets(target: TransitionTarget): string[] {
+  if (typeof target === 'string') {
+    return [target];
+  }
+
+  if (Array.isArray(target)) {
+    return target.flatMap(getTransitionTargets);
+  }
+
+  if (target?.target) {
+    return [target.target];
+  }
+
+  return [];
+}
+
+function shouldRenderChildren(stateConfig?: MermaidStateConfig) {
+  const childNames = Object.keys(stateConfig?.states || {});
+  return childNames.some((name) => !INTERNAL_STATE_NAMES.has(name));
+}
+
 interface StateMachineVisualizerProps {
   machine: StateMachineConfig | null;
   interpreter?: StateMachineInterpreter | null;
@@ -109,23 +148,67 @@ export function StateMachineVisualizer({
     if (!machine) return '';
 
     const states = machine.config?.states || machine.states || {};
-    const stateNames = Object.keys(states).filter(name => !['success', 'failure'].includes(name));
+    const stateNames = Object.keys(states);
+    const nonFinalStateNames = stateNames.filter(name => !['success', 'failure'].includes(name));
 
     let mermaid = 'stateDiagram-v2\n';
-    mermaid += '    [*] --> ' + (stateNames[0] || 'success') + '\n\n';
+    mermaid += '    [*] --> ' + getStateNodeId(nonFinalStateNames[0] || 'success') + '\n\n';
+
+    const appendStateDeclaration = (
+      stateName: string,
+      stateConfig: MermaidStateConfig | undefined,
+      indent = '    ',
+    ) => {
+      if (!shouldRenderChildren(stateConfig)) {
+        mermaid += `${indent}state "${getStateLabel(stateName)}" as ${getStateNodeId(stateName)}\n`;
+        return;
+      }
+
+      mermaid += `${indent}state "${getStateLabel(stateName)}" as ${getStateNodeId(stateName)} {\n`;
+      Object.entries(stateConfig?.states || {})
+        .filter(([childName]) => !INTERNAL_STATE_NAMES.has(childName))
+        .forEach(([childName, childConfig]) => {
+          appendStateDeclaration(childName, childConfig as MermaidStateConfig, `${indent}    `);
+        });
+      mermaid += `${indent}}\n`;
+    };
+
+    stateNames.forEach((stateName) => {
+      appendStateDeclaration(stateName, states[stateName] as MermaidStateConfig | undefined);
+    });
+    mermaid += '\n';
 
     // Add transitions based on actual state config
-    stateNames.forEach((stateName) => {
-      const stateConfig = states[stateName];
+    const appendTransitions = (stateName: string, stateConfig: MermaidStateConfig | undefined) => {
       const transitions = stateConfig?.on || {};
 
       Object.entries(transitions).forEach(([event, target]) => {
-        mermaid += `    ${stateName} --> ${target}: ${event}\n`;
+        getTransitionTargets(target).forEach((targetState) => {
+          mermaid += `    ${getStateNodeId(stateName)} --> ${getStateNodeId(targetState)}: ${event}\n`;
+        });
       });
+
+      if (stateConfig?.onDone) {
+        getTransitionTargets(stateConfig.onDone).forEach((targetState) => {
+          mermaid += `    ${getStateNodeId(stateName)} --> ${getStateNodeId(targetState)}: done\n`;
+        });
+      }
+
+      if (!shouldRenderChildren(stateConfig)) return;
+
+      Object.entries(stateConfig?.states || {})
+        .filter(([childName]) => !INTERNAL_STATE_NAMES.has(childName))
+        .forEach(([childName, childConfig]) => {
+          appendTransitions(childName, childConfig as MermaidStateConfig);
+        });
+    };
+
+    stateNames.forEach((stateName) => {
+      appendTransitions(stateName, states[stateName] as MermaidStateConfig | undefined);
     });
 
-    mermaid += '\n    success --> [*]\n';
-    mermaid += '    failure --> [*]\n';
+    mermaid += '\n    ' + getStateNodeId('success') + ' --> [*]\n';
+    mermaid += '    ' + getStateNodeId('failure') + ' --> [*]\n';
 
     return mermaid;
   }, [machine]);

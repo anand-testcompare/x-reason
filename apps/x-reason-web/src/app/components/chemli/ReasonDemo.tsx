@@ -11,6 +11,10 @@ import {
     AgentSubmissionLogic 
 } from "@/app/templates";
 import { parseStateMachineJson } from "@/app/utils";
+import {
+    AGENTIC_WORKFLOW_SAMPLE_QUERY,
+    createAgenticWorkflowTortureFixture,
+} from "@/app/api/reasoning/fixtures/agenticWorkflow";
 
 // Chemli-specific submission logic
 const chemliSubmissionLogic: AgentSubmissionLogic = async ({
@@ -23,6 +27,24 @@ const chemliSubmissionLogic: AgentSubmissionLogic = async ({
     setComponentToRender,
     aiConfig
 }) => {
+    if (userQuery.trim() === AGENTIC_WORKFLOW_SAMPLE_QUERY) {
+        dispatch({
+            type: "SET_STATE",
+            value: {
+                states: createAgenticWorkflowTortureFixture(),
+                solution:
+                    "Agentic workflow fixture: parallel discovery, critique/revision loop, human approval, and final execution.",
+                query: userQuery,
+                currentState: undefined,
+                context: undefined,
+                event: undefined,
+            }
+        });
+
+        setComponentToRender(<Success message="Agentic workflow loaded. Review the generated state machine below." />);
+        return;
+    }
+
     // Check if required dependencies are available
     if (!solver) {
         setComponentToRender(<Error message="Solver not initialized. Please refresh the page." />);
@@ -120,6 +142,7 @@ const chemliSubmissionLogic: AgentSubmissionLogic = async ({
 
 // Sample chemical development queries to help users understand what Chemli can do
 const sampleQueries = [
+    AGENTIC_WORKFLOW_SAMPLE_QUERY,
     "Create a moisturizing face cream formula with SPF protection",
     "I need a sulfate-free shampoo for dry hair with natural ingredients",
     "Develop a long-lasting lipstick formula with high pigmentation",
@@ -138,6 +161,9 @@ const chemliConfig: AgentConfig = {
     submitButtonText: "Generate Product Formula",
     processingButtonText: "Generating Formula...",
     sampleQueries,
+    sampleQueryBadges: {
+        [AGENTIC_WORKFLOW_SAMPLE_QUERY]: "Parallel",
+    },
     layout: 'grid',
     features: {
         expandableView: true,
