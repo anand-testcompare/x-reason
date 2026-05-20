@@ -56,11 +56,12 @@ export const JsonHighlighter = ({ json, className = "" }: { json: string; classN
     );
 };
 
-export const SampleQueries = ({ samples, onSelect, disabled, isExpanded }: { 
+export const SampleQueries = ({ samples, onSelect, disabled, isExpanded, sampleBadges }: {
     samples: string[], 
     onSelect: (sample: string) => void,
     disabled?: boolean,
-    isExpanded?: boolean
+    isExpanded?: boolean,
+    sampleBadges?: Record<string, string>,
 }) => {
     // Start with a default length that works for SSR
     const defaultLength = isExpanded ? 120 : 50;
@@ -108,6 +109,7 @@ export const SampleQueries = ({ samples, onSelect, disabled, isExpanded }: {
                     {samples.map((sample, index) => {
                         const isLong = sample.length > truncationLength;
                         const displayText = isLong ? `${sample.substring(0, truncationLength)}...` : sample;
+                        const badge = sampleBadges?.[sample];
                         
                         const buttonElement = (
                             <Button
@@ -116,9 +118,20 @@ export const SampleQueries = ({ samples, onSelect, disabled, isExpanded }: {
                                 size="sm"
                                 onClick={() => onSelect(sample)}
                                 disabled={disabled}
-                                className="text-xs h-7 px-2 max-w-[calc(100%-0.25rem)] flex-shrink min-w-0 break-words"
+                                className={`text-xs min-h-7 h-auto px-2 py-1 max-w-[calc(100%-0.25rem)] flex-shrink min-w-0 break-words ${
+                                    badge
+                                        ? 'border-amber-300 bg-amber-50 text-amber-950 hover:bg-amber-100'
+                                        : ''
+                                }`}
                             >
-                                <span className="truncate block w-full text-left">{displayText}</span>
+                                <span className="flex min-w-0 items-center gap-1.5">
+                                    {badge && (
+                                        <span className="shrink-0 rounded border border-amber-300 bg-white px-1 py-0.5 text-[10px] font-semibold uppercase leading-none text-amber-800">
+                                            {badge}
+                                        </span>
+                                    )}
+                                    <span className="truncate block w-full text-left">{displayText}</span>
+                                </span>
                             </Button>
                         );
 
@@ -149,6 +162,7 @@ export interface AgentConfig {
     submitButtonText: string;
     processingButtonText: string;
     sampleQueries?: string[];
+    sampleQueryBadges?: Record<string, string>;
     layout: 'grid' | 'flex';
     features: {
         expandableView?: boolean;
@@ -222,6 +236,7 @@ export function AgentDemoTemplate({ config, hookReturn, inputRef, stateRef }: Ag
                         onSelect={fillSampleQuery}
                         disabled={isLoading}
                         isExpanded={isExpanded}
+                        sampleBadges={config.sampleQueryBadges}
                     />
                 )}
 

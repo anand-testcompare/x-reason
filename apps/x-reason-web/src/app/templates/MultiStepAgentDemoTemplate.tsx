@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from "react";
-import { createMachine, createActor } from "xstate";
+import { createMachine } from "xstate";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { ProgressBar } from "@/app/components/ProgressBar";
@@ -12,8 +12,21 @@ import { AIProviderSelector } from "@/app/components/ui/ai-provider-selector";
 import { ArrowUp, ArrowLeft, ArrowRight, Play, Copy, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import Interpreter from "@/app/api/reasoning/Interpreter.v1.headed";
 import { LocalStorage } from "@/app/components";
-import { programV1 } from '@/app/api/reasoning';
-import { safeExtractContent } from '@/app/utils';
+import { programV1, StateConfig, Task } from '@/app/api/reasoning';
+import {
+  AGENTIC_WORKFLOW_SAMPLE_QUERY,
+  getAgenticWorkflowSampleStateResult,
+} from '@/app/api/reasoning/fixtures/agenticWorkflow';
+import {
+  ChooseTransition,
+  cloneStateConfigs,
+  collectExecutableStates,
+  matchTransitionTarget,
+  runStateMachineInterpreter,
+  safeExtractContent,
+  selectHumanApprovalTransition,
+  stateRequiresHumanApproval,
+} from '@/app/utils';
 import { initializeInspector } from '@/app/lib/inspector';
 
 const STEPS = [
@@ -21,6 +34,32 @@ const STEPS = [
   { id: 'compile', label: 'Compile' },
   { id: 'execute', label: 'Execute' }
 ];
+
+type SendableActor = {
+  send: (event: Record<string, unknown>) => void;
+};
+
+type PendingHumanApproval = {
+  stateLabel: string;
+  task?: string;
+  approve: () => void;
+  requestChanges: () => void;
+};
+
+function isSendableActor(actor: unknown): actor is SendableActor {
+  return (
+    typeof actor === "object" &&
+    actor !== null &&
+    "send" in actor &&
+    typeof (actor as { send?: unknown }).send === "function"
+  );
+}
+
+function sendActorEvent(actor: unknown, event: Record<string, unknown>) {
+  if (isSendableActor(actor)) {
+    actor.send(event);
+  }
+}
 
 export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: AgentDemoTemplateProps) {
   const [currentStep, setCurrentStep] = useState(0);
@@ -32,8 +71,8 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
   const [collapsedStates, setCollapsedStates] = useState<Set<string>>(new Set());
   const [savedInputValue, setSavedInputValue] = useState<string>('');
   const [hasExecutedBefore, setHasExecutedBefore] = useState(false);
-  const [currentActor, setCurrentActor] = useState<Record<string, unknown> | null>(null);
   const [copyConfigSuccess, setCopyConfigSuccess] = useState(false);
+  const [pendingHumanApproval, setPendingHumanApproval] = useState<PendingHumanApproval | null>(null);
   
   const {
     isLoading,
@@ -59,13 +98,16 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
     }
     
     if (states && hookReturn.context) {
+      const contextFunctions = (hookReturn.context as { functions?: Map<string, Task> }).functions;
       console.log('Compiling states:', states);
-      console.log('Available functions:', hookReturn.context.functions);
+      console.log('Available functions:', contextFunctions);
       
       try {
+        const sourceStateConfigs = cloneStateConfigs(states as StateConfig[]);
+        const machineStateConfigs = cloneStateConfigs(sourceStateConfigs);
         // Use the existing programV1 function to create the machine
         // This is what the reasoning engine actually uses
-        const machine = programV1(states, hookReturn.context.functions || new Map());
+        const machine = programV1(machineStateConfigs, contextFunctions || new Map());
         console.log('Created machine with programV1:', machine);
         
         setCompiledMachine({
@@ -73,8 +115,9 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
           config: machine.config,
           id: machine.id,
           states: machine.config.states,
-          stateConfigs: states,
-          functions: hookReturn.context.functions
+          stateConfigs: sourceStateConfigs,
+          compiledStateConfigs: machineStateConfigs,
+          functions: contextFunctions
         });
         
         setCurrentStep(1);
@@ -99,16 +142,12 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
             simulateStateExecution(state.id as string, savedInputValue || inputRef.current?.value || '')
               .then(() => {
                 // Send the CONTINUE event to transition to next state
-                if (context.actor) {
-                  console.log(`Sending CONTINUE event from ${state.id as string}`);
-                  (context.actor as Record<string, unknown>).send({ type: 'CONTINUE' });
-                }
+                console.log(`Sending CONTINUE event from ${state.id as string}`);
+                sendActorEvent(context.actor, { type: 'CONTINUE' });
               })
               .catch((error) => {
                 console.error(`Error in state ${state.id as string}, sending ERROR event:`, error);
-                if (context.actor) {
-                  (context.actor as Record<string, unknown>).send({ type: 'ERROR', error });
-                }
+                sendActorEvent(context.actor, { type: 'ERROR', error });
               });
           };
 
@@ -118,13 +157,39 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
           });
         });
         
-        const fallbackMachine = machineMacro(stepsMap);
+        const fallbackMachineConfig = {
+          id: `${config.name.toLowerCase()}-fallback-machine`,
+          initial: (states as Array<Record<string, unknown>>)[0]?.id as string | undefined,
+          states: Object.fromEntries(
+            (states as Array<Record<string, unknown>>).map((state, index, allStates) => [
+              state.id as string,
+              state.type === 'final'
+                ? { type: 'final' }
+                : {
+                    entry: ({ context, event, self }: Record<string, unknown>) => {
+                      const step = stepsMap.get(state.id as string);
+                      const implementation = step?.implementation as
+                        | ((ctx: Record<string, unknown>, evt: Record<string, unknown>) => void)
+                        | undefined;
+                      implementation?.({ ...(context as Record<string, unknown>), actor: self }, event as Record<string, unknown>);
+                    },
+                    on: {
+                      CONTINUE: (allStates[index + 1]?.id as string | undefined) || 'success',
+                      ERROR: 'failure',
+                    },
+              },
+            ]),
+          ),
+        };
+        const fallbackMachine = createMachine(
+          fallbackMachineConfig as Parameters<typeof createMachine>[0],
+        );
         setCompiledMachine({
           machine: fallbackMachine,
           config: fallbackMachine.config,
           id: fallbackMachine.id,
           states: fallbackMachine.config.states,
-          stateConfigs: states,
+          stateConfigs: cloneStateConfigs(states as StateConfig[]),
           functions: stepsMap
         });
         
@@ -155,16 +220,12 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
             simulateStateExecution(state.id as string, savedInputValue || inputRef.current?.value || '')
               .then(() => {
                 // Send the CONTINUE event to transition to next state
-                if (context.actor) {
-                  console.log(`Sending CONTINUE event from ${state.id as string}`);
-                  (context.actor as Record<string, unknown>).send({ type: 'CONTINUE' });
-                }
+                console.log(`Sending CONTINUE event from ${state.id as string}`);
+                sendActorEvent(context.actor, { type: 'CONTINUE' });
               })
               .catch((error) => {
                 console.error(`Error in state ${state.id as string}, sending ERROR event:`, error);
-                if (context.actor) {
-                  (context.actor as Record<string, unknown>).send({ type: 'ERROR', error });
-                }
+                sendActorEvent(context.actor, { type: 'ERROR', error });
               });
           };
 
@@ -232,7 +293,7 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
             config: machineConfig,
             id: machine.id,
             states: machineConfig.states,
-            stateConfigs: states,
+            stateConfigs: cloneStateConfigs(states as StateConfig[]),
             functions: functionsMap
           });
           
@@ -258,15 +319,120 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
   };
 
   const getExecutableStates = () => {
+    const sourceStates = (compiledMachine?.stateConfigs as StateConfig[] | undefined) || [];
     const seen = new Set<string>();
-    return ((compiledMachine?.stateConfigs as Array<Record<string, unknown>> | undefined) || [])
-      .filter((state: Record<string, unknown>) => state.type !== 'final')
-      .filter((state: Record<string, unknown>) => {
+    return collectExecutableStates(sourceStates)
+      .filter((state: StateConfig) => {
         const id = String(state.id || '');
         if (!id || seen.has(id)) return false;
         seen.add(id);
         return true;
+      }) as Array<Record<string, unknown>>;
+  };
+
+  const chooseTransitionWithAI: ChooseTransition = async ({
+    stateLabel,
+    query,
+    result,
+    context,
+    transitions,
+    trace,
+  }) => {
+    if (transitions.length <= 1) {
+      return transitions[0]?.target;
+    }
+
+    if (result.startsWith("HUMAN_DECISION:")) {
+      const decision = result.includes("changes_requested")
+        ? "changes_requested"
+        : "approved";
+      return selectHumanApprovalTransition(decision, transitions);
+    }
+
+    if (query === AGENTIC_WORKFLOW_SAMPLE_QUERY) {
+      if (stateLabel === "CritiquePlan") {
+        const critiqueCompletions = trace.filter(
+          (entry) => entry.state === "CritiquePlan" && entry.event === "complete",
+        ).length;
+        const targetLabel = critiqueCompletions <= 1 ? "RevisePlan" : "HumanApproval";
+        return transitions.find((transition) => transition.label === targetLabel)?.target;
+      }
+
+      return transitions[0]?.target;
+    }
+
+    const { generateAICompletion } = await import("@/app/utils/streamAI");
+    const transitionSummary = transitions.map((transition) => ({
+      target: transition.target,
+      label: transition.label,
+    }));
+
+    const response = await generateAICompletion({
+      aiConfig: hookReturn.aiConfig,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You choose the next state in an X-Reason state machine. Return only JSON shaped as {\"target\":\"<exact target>\"}.",
+        },
+        {
+          role: "user",
+          content: JSON.stringify(
+            {
+              originalQuery: query,
+              currentState: stateLabel,
+              currentResult: result,
+              availableTransitions: transitionSummary,
+              executionTrace: trace.map((entry) => ({
+                state: entry.state,
+                event: entry.event,
+                target: entry.target,
+              })),
+              context,
+            },
+            null,
+            2,
+          ),
+        },
+      ],
+    });
+
+    return matchTransitionTarget(response, transitions) || transitions[0]?.target;
+  };
+
+  const waitForHumanApproval = (state: StateConfig, stateLabel: string) => {
+    setExecutionResults(prev => [...prev, {
+      state: stateLabel,
+      result: "Waiting for human approval.",
+      timestamp: new Date(),
+    }]);
+
+    return new Promise<string>((resolve) => {
+      setPendingHumanApproval({
+        stateLabel,
+        task: state.task,
+        approve: () => {
+          const result = `HUMAN_DECISION: approved ${stateLabel}`;
+          setPendingHumanApproval(null);
+          setExecutionResults(prev => [...prev, {
+            state: stateLabel,
+            result,
+            timestamp: new Date(),
+          }]);
+          resolve(result);
+        },
+        requestChanges: () => {
+          const result = `HUMAN_DECISION: changes_requested ${stateLabel}`;
+          setPendingHumanApproval(null);
+          setExecutionResults(prev => [...prev, {
+            state: stateLabel,
+            result,
+            timestamp: new Date(),
+          }]);
+          resolve(result);
+        },
       });
+    });
   };
 
   const executeStateMachine = async () => {
@@ -290,31 +456,49 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
         await initializeInspector();
       }
 
-      // Create an actor from the compiled machine for visualization
-      if (compiledMachine.machine) {
-        const actor = createActor(compiledMachine.machine);
-        setCurrentActor(actor);
-        actor.start();
-      }
+      const result = await runStateMachineInterpreter({
+        states: compiledMachine.stateConfigs as StateConfig[],
+        query: savedInputValue,
+        executeState: async ({ state, stateLabel }) => {
+          if (stateRequiresHumanApproval(state, stateLabel)) {
+            return waitForHumanApproval(state, stateLabel);
+          }
 
-      // Execute each state sequentially
-      const states = getExecutableStates();
+          const fixtureResult =
+            savedInputValue === AGENTIC_WORKFLOW_SAMPLE_QUERY
+              ? getAgenticWorkflowSampleStateResult(stateLabel)
+              : undefined;
 
-      console.log(`Executing ${states.length} states sequentially`);
+          if (fixtureResult) {
+            setExecutionResults(prev => [...prev, {
+              state: stateLabel,
+              result: fixtureResult,
+              timestamp: new Date(),
+            }]);
+            return fixtureResult;
+          }
 
-      for (const state of states) {
-        const stateName = state.id as string;
-        console.log(`Starting execution of state: ${stateName}`);
-        setCurrentExecutionState(stateName);
-
-        try {
-          await simulateStateExecution(stateName, savedInputValue);
-          console.log(`Completed execution of state: ${stateName}`);
-        } catch (error) {
-          console.error(`Error executing state ${stateName}:`, error);
-          // Continue with next state even if this one fails
-        }
-      }
+          return simulateStateExecution(stateLabel, savedInputValue);
+        },
+        chooseTransition: chooseTransitionWithAI,
+        onCurrentState: setCurrentExecutionState,
+        onCompleteState: (stateLabel) => {
+          setCompletedStates(prev => {
+            if (prev.has(stateLabel)) return prev;
+            const newSet = new Set(prev);
+            newSet.add(stateLabel);
+            return newSet;
+          });
+        },
+        onTrace: (entry) => {
+          if (entry.event !== "transition") return;
+          setExecutionResults(prev => [...prev, {
+            state: entry.state,
+            result: `Transitioned to ${entry.target}`,
+            timestamp: entry.timestamp,
+          }]);
+        },
+      });
 
       console.log('All states executed successfully');
       setIsExecuting(false);
@@ -323,12 +507,13 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
       // Add final completion message
       setExecutionResults(prev => [...prev, {
         state: 'final-summary',
-        result: `Execution complete.\n\nAll ${states.length} steps have been executed successfully. Review the results above to verify each step completed as expected.`,
+        result: `Execution complete.\n\nVisited ${result.completedStates.length} runtime steps and reached ${result.finalState || 'a final state'}. Review the results above to verify each step completed as expected.`,
         timestamp: new Date()
       }]);
 
     } catch (error) {
       console.error('Error executing state machine:', error);
+      setPendingHumanApproval(null);
       setExecutionResults(prev => [...prev, {
         state: 'error',
         result: `Error executing state machine: ${error}`,
@@ -565,6 +750,7 @@ Describe what happens in this step concisely. Start directly with the action, no
               onSelect={fillSampleQuery}
               disabled={isLoading}
               isExpanded={hookReturn.isExpanded}
+              sampleBadges={config.sampleQueryBadges}
             />
           )}
 
@@ -766,7 +952,7 @@ Describe what happens in this step concisely. Start directly with the action, no
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-sm font-semibold text-gray-800">
-                      {compiledMachine.id}
+                      {String(compiledMachine.id)}
                     </h4>
                     <p className="text-xs text-gray-600">
                       {compiledMachine.states ? Object.keys(compiledMachine.states).length : 0} states
@@ -778,14 +964,15 @@ Describe what happens in this step concisely. Start directly with the action, no
               <div className="flex-1 p-4">
                 {(() => {
                   // Convert functions map to stepsMap format for visualization
-                  const stepsMap = new Map<string, Record<string, unknown>>();
+                  const stepsMap = new Map<string, { id: string; func: unknown; type?: 'pause' | 'async' }>();
                   if (compiledMachine.functions) {
                     (compiledMachine.functions as Map<string, unknown>).forEach((func: unknown, key: string) => {
                       const stateConfig = (compiledMachine.stateConfigs as Array<Record<string, unknown>>)?.find((s: Record<string, unknown>) => s.id === key);
+                      const stateType = ((stateConfig as Record<string, unknown>)?.meta as Record<string, unknown>)?.type;
                       stepsMap.set(key, {
                         id: key,
                         func: func,
-                        type: ((stateConfig as Record<string, unknown>)?.meta as Record<string, unknown>)?.type as string || 'async'
+                        type: stateType === 'pause' ? 'pause' : 'async'
                       });
                     });
                   }
@@ -793,7 +980,6 @@ Describe what happens in this step concisely. Start directly with the action, no
                   return (
                     <StateMachineVisualizer 
                       machine={compiledMachine.machine}
-                      interpreter={currentActor}
                       stepsMap={stepsMap}
                       inline={true}
                       className="!static !w-full !bottom-auto !right-auto !transform-none !fixed-none"
@@ -910,6 +1096,36 @@ Describe what happens in this step concisely. Start directly with the action, no
             </div>
           )}
         </div>
+
+        {pendingHumanApproval && (
+          <div className="border border-amber-200 bg-amber-50 rounded-lg p-4 space-y-3">
+            <div>
+              <h4 className="text-sm font-semibold text-amber-900">
+                Human approval required: {pendingHumanApproval.stateLabel}
+              </h4>
+              {pendingHumanApproval.task && (
+                <p className="text-sm text-amber-800 mt-1">
+                  {pendingHumanApproval.task}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                onClick={pendingHumanApproval.requestChanges}
+                variant="outline"
+                className="border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
+              >
+                Request changes
+              </Button>
+              <Button
+                onClick={pendingHumanApproval.approve}
+                className="bg-amber-700 text-white hover:bg-amber-800"
+              >
+                Approve
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Execution Checklist */}
         <div className="border rounded-lg bg-white max-h-[500px] overflow-y-auto">
