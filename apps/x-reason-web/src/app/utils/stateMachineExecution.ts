@@ -27,6 +27,70 @@ export type TransitionOption = {
 };
 
 export type HumanApprovalDecision = "approved" | "changes_requested";
+export type ExecutionStepDisplayStatus = "current" | "completed" | "pending";
+export type PlanUnderReviewResult = Pick<ExecutionResult, "state" | "result" | "timestamp">;
+
+export function formatHumanApprovalDecisionResult({
+  decision,
+  feedback,
+  stateLabel,
+}: {
+  decision: HumanApprovalDecision;
+  feedback?: string;
+  stateLabel: string;
+}): string {
+  const decisionResult = `HUMAN_DECISION: ${decision} ${stateLabel}`;
+  const requestedChanges = feedback?.trim();
+
+  if (decision !== "changes_requested" || !requestedChanges) {
+    return decisionResult;
+  }
+
+  return `${decisionResult}\nREQUESTED_CHANGES: ${requestedChanges}`;
+}
+
+export function getExecutionStepDisplayStatus({
+  isCompleted,
+  isCurrent,
+}: {
+  isCompleted: boolean;
+  isCurrent: boolean;
+}): ExecutionStepDisplayStatus {
+  if (isCurrent) return "current";
+  if (isCompleted) return "completed";
+  return "pending";
+}
+
+export function selectPlanUnderReview(
+  results: PlanUnderReviewResult[],
+): PlanUnderReviewResult | undefined {
+  const contentResults = results.filter((result) => {
+    const text = result.result.trim();
+    return (
+      text.length > 0 &&
+      !text.startsWith("Transitioned to ") &&
+      !text.startsWith("Waiting for human approval.") &&
+      !text.startsWith("HUMAN_DECISION:") &&
+      !text.startsWith("REQUESTED_CHANGES:") &&
+      !text.startsWith("Execution complete.") &&
+      !text.startsWith("❌") &&
+      !text.startsWith("✅") &&
+      !text.startsWith("🔄")
+    );
+  });
+
+  return (
+    findLast(contentResults, (result) => /(revise|revision|edit)/i.test(result.state)) ||
+    findLast(contentResults, (result) => /draft/i.test(result.state)) ||
+    findLast(contentResults, (result) => {
+      const state = result.state.toLowerCase();
+      return (
+        state.includes("plan") &&
+        !/(critique|review|compliance|research|approval|execute)/.test(state)
+      );
+    })
+  );
+}
 
 export type ExecuteState = (input: {
   state: StateConfig;
@@ -83,6 +147,39 @@ export function getFunctionCatalogKey(stateId: string): string {
   return getStateLabel(stateId).split("|")[0] || stateId;
 }
 
+export function buildStateExecutionPrompt({
+  stateName,
+  query,
+  requestedChanges = "",
+}: {
+  stateName: string;
+  query: string;
+  requestedChanges?: string;
+}): string {
+  const stateLabel = getStateLabel(stateName);
+  const normalizedState = stateLabel.toLowerCase();
+  const feedback = requestedChanges.trim();
+  const feedbackContext = feedback
+    ? `\nHuman requested changes that must be reflected:\n${feedback}\n`
+    : "";
+
+  if (normalizedState.includes("executeplan")) {
+    return `Execute the approved launch workflow for: ${query}${feedbackContext}
+
+Summarize the concrete launch-execution actions now unlocked by approval: decision gates, owners, sequencing, and the next milestone. Do not give consumer usage instructions or generic product advice. Start directly with the execution actions, no preamble.`;
+  }
+
+  if (/(revise|revision|edit)/i.test(stateLabel)) {
+    return `Execute the "${stateLabel}" revision step for: ${query}${feedbackContext}
+
+Revise the plan so the requested changes are explicitly incorporated. Start directly with the revised plan changes, no preamble.`;
+  }
+
+  return `Execute the "${stateLabel}" step for: ${query}
+
+Describe what happens in this step concisely. Start directly with the action, no preamble.`;
+}
+
 export function collectExecutableStates(states: StateConfig[]): StateConfig[] {
   const collected: StateConfig[] = [];
   const seen = new Set<StateConfig>();
@@ -100,6 +197,16 @@ export function collectExecutableStates(states: StateConfig[]): StateConfig[] {
 
   states.forEach(visit);
   return collected;
+}
+
+function findLast<T>(items: T[], predicate: (item: T) => boolean): T | undefined {
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    if (predicate(items[index])) {
+      return items[index];
+    }
+  }
+
+  return undefined;
 }
 
 export function getTransitionOptions(state: StateConfig): TransitionOption[] {
@@ -172,6 +279,49 @@ export function selectHumanApprovalTransition(
       ),
     )?.target || transitions[0]?.target
   );
+}
+
+export function selectReviewGateTransitionAfterRevision(
+  stateLabel: string,
+  transitions: TransitionOption[],
+  trace: ExecutionTraceEntry[],
+): string | undefined {
+  const revisionTransition = transitions.find((transition) =>
+    /(revise|revision|changes|edit|draft)/.test(transition.label.toLowerCase()),
+  );
+  const approvalTransition = transitions.find((transition) => {
+    const label = transition.label.toLowerCase();
+    return (
+      /(humanapproval|human approval|approval|approve|execute|success|final)/.test(label) &&
+      !/(revise|revision|changes|edit|draft)/.test(label)
+    );
+  });
+
+  if (!revisionTransition || !approvalTransition) {
+    return undefined;
+  }
+
+  const reviewGateText = stateLabel.toLowerCase();
+  const looksLikeReviewGate = /(critique|review|evaluate|gate)/.test(reviewGateText);
+  if (!looksLikeReviewGate) {
+    return undefined;
+  }
+
+  const completedRevision = trace.some(
+    (entry) =>
+      entry.event === "complete" &&
+      /(revise|revision|changes|edit)/.test(entry.state.toLowerCase()),
+  );
+  const alreadyChoseRevision = trace.some(
+    (entry) =>
+      entry.event === "transition" &&
+      entry.state === stateLabel &&
+      entry.target === revisionTransition.label,
+  );
+
+  return completedRevision || alreadyChoseRevision
+    ? approvalTransition.target
+    : undefined;
 }
 
 function createTrace(

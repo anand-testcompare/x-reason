@@ -1,5 +1,12 @@
 import { NextRequest } from 'next/server';
-import { getAIModel, AIConfig, DEFAULT_PROVIDER } from "../../ai/providers";
+import {
+  GATEWAY_AUTH_ERROR,
+  getAIModel,
+  hasGatewayAuth,
+  isGatewayAuthenticationError,
+  AIConfig,
+  DEFAULT_PROVIDER,
+} from "../../ai/providers";
 import { streamText } from 'ai';
 
 export async function POST(request: NextRequest) {
@@ -8,6 +15,13 @@ export async function POST(request: NextRequest) {
 
     if (!query) {
       return new Response('Query is required', { status: 400 });
+    }
+
+    if (!hasGatewayAuth(request.headers)) {
+      return new Response(GATEWAY_AUTH_ERROR, {
+        status: 401,
+        headers: { 'Content-Type': 'text/plain' },
+      });
     }
 
     const config: AIConfig = { provider, model };
@@ -36,7 +50,10 @@ export async function POST(request: NextRequest) {
           controller.close();
         } catch (error) {
           console.error('Stream error:', error);
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', data: String(error) })}\n\n`));
+          const data = isGatewayAuthenticationError(error)
+            ? GATEWAY_AUTH_ERROR
+            : String(error);
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', data })}\n\n`));
           controller.close();
         }
       },
@@ -51,6 +68,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('API error:', error);
+    if (isGatewayAuthenticationError(error)) {
+      return new Response(GATEWAY_AUTH_ERROR, {
+        status: 401,
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    }
+
     return new Response('Internal server error', { status: 500 });
   }
 }

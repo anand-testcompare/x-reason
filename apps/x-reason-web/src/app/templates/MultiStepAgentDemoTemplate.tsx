@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createMachine } from "xstate";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
+import { Label } from "@/app/components/ui/label";
 import { ProgressBar } from "@/app/components/ProgressBar";
 import { StateMachineVisualizer } from "@/app/components/StateMachineVisualizer";
 import { AgentDemoTemplateProps, ResponsiveContainer, SampleQueries, JsonHighlighter } from "./AgentDemoTemplate";
@@ -14,18 +15,20 @@ import Interpreter from "@/app/api/reasoning/Interpreter.v1.headed";
 import { LocalStorage } from "@/app/components";
 import { programV1, StateConfig, Task } from '@/app/api/reasoning';
 import {
-  AGENTIC_WORKFLOW_SAMPLE_QUERY,
-  getAgenticWorkflowSampleStateResult,
-} from '@/app/api/reasoning/fixtures/agenticWorkflow';
-import {
   ChooseTransition,
+  buildStateExecutionPrompt,
   cloneStateConfigs,
   collectExecutableStates,
+  formatHumanApprovalDecisionResult,
+  getExecutionStepDisplayStatus,
   matchTransitionTarget,
   runStateMachineInterpreter,
   safeExtractContent,
   selectHumanApprovalTransition,
+  selectPlanUnderReview,
+  selectReviewGateTransitionAfterRevision,
   stateRequiresHumanApproval,
+  VisualizationStateConfig,
 } from '@/app/utils';
 import { initializeInspector } from '@/app/lib/inspector';
 
@@ -43,7 +46,7 @@ type PendingHumanApproval = {
   stateLabel: string;
   task?: string;
   approve: () => void;
-  requestChanges: () => void;
+  requestChanges: (feedback: string) => void;
 };
 
 function isSendableActor(actor: unknown): actor is SendableActor {
@@ -73,6 +76,8 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
   const [hasExecutedBefore, setHasExecutedBefore] = useState(false);
   const [copyConfigSuccess, setCopyConfigSuccess] = useState(false);
   const [pendingHumanApproval, setPendingHumanApproval] = useState<PendingHumanApproval | null>(null);
+  const [humanApprovalFeedback, setHumanApprovalFeedback] = useState("");
+  const latestRequestedChangesRef = useRef("");
   
   const {
     isLoading,
@@ -84,6 +89,8 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
     fillSampleQuery,
     solution
   } = hookReturn;
+
+  const planUnderReview = selectPlanUnderReview(executionResults);
 
   const handleCompile = () => {
     console.log('handleCompile called');
@@ -349,16 +356,13 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
       return selectHumanApprovalTransition(decision, transitions);
     }
 
-    if (query === AGENTIC_WORKFLOW_SAMPLE_QUERY) {
-      if (stateLabel === "CritiquePlan") {
-        const critiqueCompletions = trace.filter(
-          (entry) => entry.state === "CritiquePlan" && entry.event === "complete",
-        ).length;
-        const targetLabel = critiqueCompletions <= 1 ? "RevisePlan" : "HumanApproval";
-        return transitions.find((transition) => transition.label === targetLabel)?.target;
-      }
-
-      return transitions[0]?.target;
+    const reviewGateTarget = selectReviewGateTransitionAfterRevision(
+      stateLabel,
+      transitions,
+      trace,
+    );
+    if (reviewGateTarget) {
+      return reviewGateTarget;
     }
 
     const { generateAICompletion } = await import("@/app/utils/streamAI");
@@ -406,14 +410,19 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
       result: "Waiting for human approval.",
       timestamp: new Date(),
     }]);
+    setHumanApprovalFeedback("");
 
     return new Promise<string>((resolve) => {
       setPendingHumanApproval({
         stateLabel,
         task: state.task,
         approve: () => {
-          const result = `HUMAN_DECISION: approved ${stateLabel}`;
+          const result = formatHumanApprovalDecisionResult({
+            decision: "approved",
+            stateLabel,
+          });
           setPendingHumanApproval(null);
+          setHumanApprovalFeedback("");
           setExecutionResults(prev => [...prev, {
             state: stateLabel,
             result,
@@ -421,9 +430,15 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
           }]);
           resolve(result);
         },
-        requestChanges: () => {
-          const result = `HUMAN_DECISION: changes_requested ${stateLabel}`;
+        requestChanges: (feedback: string) => {
+          const result = formatHumanApprovalDecisionResult({
+            decision: "changes_requested",
+            feedback,
+            stateLabel,
+          });
+          latestRequestedChangesRef.current = feedback.trim();
           setPendingHumanApproval(null);
+          setHumanApprovalFeedback("");
           setExecutionResults(prev => [...prev, {
             state: stateLabel,
             result,
@@ -448,6 +463,8 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
     setIsExecuting(true);
     setExecutionResults([]);
     setCompletedStates(new Set());
+    setHumanApprovalFeedback("");
+    latestRequestedChangesRef.current = "";
     setHasExecutedBefore(true);
 
     try {
@@ -462,20 +479,6 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
         executeState: async ({ state, stateLabel }) => {
           if (stateRequiresHumanApproval(state, stateLabel)) {
             return waitForHumanApproval(state, stateLabel);
-          }
-
-          const fixtureResult =
-            savedInputValue === AGENTIC_WORKFLOW_SAMPLE_QUERY
-              ? getAgenticWorkflowSampleStateResult(stateLabel)
-              : undefined;
-
-          if (fixtureResult) {
-            setExecutionResults(prev => [...prev, {
-              state: stateLabel,
-              result: fixtureResult,
-              timestamp: new Date(),
-            }]);
-            return fixtureResult;
           }
 
           return simulateStateExecution(stateLabel, savedInputValue);
@@ -527,9 +530,15 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
     console.log(`simulateStateExecution called for state: ${stateName}`);
 
     try {
-      const prompt = `Execute the "${stateName}" step for: ${query}
-
-Describe what happens in this step concisely. Start directly with the action, no preamble.`;
+      const requestedChanges =
+        /(revise|revision|edit|executeplan)/i.test(stateName)
+          ? latestRequestedChangesRef.current
+          : "";
+      const prompt = buildStateExecutionPrompt({
+        stateName,
+        query,
+        requestedChanges,
+      });
 
       console.log(`Setting up streaming for state ${stateName}`);
 
@@ -798,7 +807,10 @@ Describe what happens in this step concisely. Start directly with the action, no
       </Card>
     );
 
-    const renderStatesSection = () => (
+    const renderStatesSection = () => {
+      const hasGeneratedStates = Array.isArray(states) && states.length > 0;
+
+      return (
       <Card className="h-fit">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center justify-between">
@@ -811,7 +823,7 @@ Describe what happens in this step concisely. Start directly with the action, no
                     size="sm"
                     onClick={hookReturn.copyToClipboard}
                     className={`h-7 w-7 p-0 ${hookReturn.copySuccess ? 'bg-green-100 text-green-800' : ''}`}
-                    disabled={!states}
+                    disabled={!hasGeneratedStates}
                     title={hookReturn.copySuccess ? 'Copied!' : 'Copy JSON'}
                   >
                     {hookReturn.copySuccess ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
@@ -833,11 +845,12 @@ Describe what happens in this step concisely. Start directly with the action, no
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className={`border rounded-md bg-slate-50 p-3 overflow-auto ${hookReturn.isExpanded ? 'min-h-[200px]' : 'min-h-[120px]'}`}>
+          <div className={`border rounded-md bg-slate-50 p-3 overflow-auto ${hookReturn.isExpanded ? 'min-h-[280px] max-h-[70vh]' : 'min-h-[120px] max-h-[320px]'}`}>
             {config.features.jsonHighlighting ? (
               <JsonHighlighter 
-                json={JSON.stringify({ states }, null, 2)}
+                json={JSON.stringify({ states }, null, 1)}
                 className="w-full h-full"
+                indent={1}
               />
             ) : (
               <Textarea 
@@ -849,28 +862,28 @@ Describe what happens in this step concisely. Start directly with the action, no
             )}
           </div>
           <div className="space-y-2">
-            <Button disabled={isLoading} onClick={hookReturn.onStateChanges} variant="outline" size="sm" className="w-full text-xs">
+            <Button disabled={isLoading || !hasGeneratedStates} onClick={hookReturn.onStateChanges} variant="outline" size="sm" className="w-full text-xs">
               Update and Rerun
             </Button>
-            {states && (
-              <Button 
-                onClick={() => {
-                  console.log('Compile button clicked!');
-                  console.log('Current states:', states);
-                  console.log('Current step:', currentStep);
-                  handleCompile();
-                }} 
-                size="sm" 
-                className="w-full"
-              >
-                <ArrowRight className="mr-2 h-3 w-3" />
-                Compile State Machine
-              </Button>
-            )}
+            <Button
+              onClick={() => {
+                console.log('Compile button clicked!');
+                console.log('Current states:', states);
+                console.log('Current step:', currentStep);
+                handleCompile();
+              }}
+              disabled={isLoading || !hasGeneratedStates}
+              size="sm"
+              className="w-full"
+            >
+              <ArrowRight className="mr-2 h-3 w-3" />
+              Compile State Machine
+            </Button>
           </div>
         </CardContent>
       </Card>
     );
+    };
 
     const renderSolutionSection = () => (
       <Card>
@@ -955,7 +968,9 @@ Describe what happens in this step concisely. Start directly with the action, no
                       {String(compiledMachine.id)}
                     </h4>
                     <p className="text-xs text-gray-600">
-                      {compiledMachine.states ? Object.keys(compiledMachine.states).length : 0} states
+                      {compiledMachine.stateConfigs
+                        ? collectExecutableStates(compiledMachine.stateConfigs as StateConfig[]).length
+                        : 0} executable steps
                     </p>
                   </div>
                 </div>
@@ -980,6 +995,7 @@ Describe what happens in this step concisely. Start directly with the action, no
                   return (
                     <StateMachineVisualizer 
                       machine={compiledMachine.machine}
+                      stateConfigs={compiledMachine.stateConfigs as VisualizationStateConfig[]}
                       stepsMap={stepsMap}
                       inline={true}
                       className="!static !w-full !bottom-auto !right-auto !transform-none !fixed-none"
@@ -990,7 +1006,7 @@ Describe what happens in this step concisely. Start directly with the action, no
               
               <details className="p-4 border-t bg-gray-50">
                 <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 flex items-center justify-between">
-                  <span>View Machine Configuration</span>
+                  <span>View Generated State Machine</span>
                   <Button
                     size="sm"
                     variant="outline"
@@ -998,7 +1014,7 @@ Describe what happens in this step concisely. Start directly with the action, no
                       e.preventDefault();
                       e.stopPropagation();
                       try {
-                        const machineJson = JSON.stringify(compiledMachine?.config || compiledMachine, null, 2);
+                        const machineJson = JSON.stringify({ states: compiledMachine?.stateConfigs || [] }, null, 2);
                         await navigator.clipboard.writeText(machineJson);
                         setCopyConfigSuccess(true);
                         setTimeout(() => setCopyConfigSuccess(false), 1500);
@@ -1021,10 +1037,11 @@ Describe what happens in this step concisely. Start directly with the action, no
                     )}
                   </Button>
                 </summary>
-                <div className="mt-3 p-3 bg-white rounded border max-h-48 overflow-auto">
-                  <pre className="whitespace-pre-wrap text-xs text-gray-600">
-                    {JSON.stringify(compiledMachine?.config || compiledMachine, null, 2)}
-                  </pre>
+                <div className="mt-3 rounded border bg-white p-3 max-h-72 overflow-auto">
+                  <JsonHighlighter
+                    json={JSON.stringify({ states: compiledMachine?.stateConfigs || [] }, null, 1)}
+                    indent={1}
+                  />
                 </div>
               </details>
             </>
@@ -1109,9 +1126,37 @@ Describe what happens in this step concisely. Start directly with the action, no
                 </p>
               )}
             </div>
+            <div className="rounded-md border border-amber-200 bg-white p-3">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <Label className="text-amber-900">Plan under review</Label>
+                {planUnderReview && (
+                  <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                    {planUnderReview.state}
+                  </span>
+                )}
+              </div>
+              <div className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded border border-amber-100 bg-amber-50/40 p-3 text-sm leading-6 text-amber-950">
+                {planUnderReview
+                  ? safeExtractContent(planUnderReview.result)
+                  : "No draft or revised plan has been produced yet."}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="human-approval-feedback" className="text-amber-900">
+                Requested changes
+              </Label>
+              <Textarea
+                id="human-approval-feedback"
+                value={humanApprovalFeedback}
+                onChange={(event) => setHumanApprovalFeedback(event.target.value)}
+                placeholder="Add the revision note before sending this plan back."
+                className="min-h-[88px] resize-y border-amber-200 bg-white text-amber-950 placeholder:text-amber-700/60"
+              />
+            </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <Button
-                onClick={pendingHumanApproval.requestChanges}
+                onClick={() => pendingHumanApproval.requestChanges(humanApprovalFeedback)}
+                disabled={!humanApprovalFeedback.trim()}
                 variant="outline"
                 className="border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
               >
@@ -1149,15 +1194,18 @@ Describe what happens in this step concisely. Start directly with the action, no
                   const isCurrent = currentExecutionState === state.id;
                   const isCollapsed = collapsedStates.has(state.id as string);
                   const hasResults = executionResults.some(r => r.state === state.id);
+                  const displayStatus = getExecutionStepDisplayStatus({ isCompleted, isCurrent });
+                  const canToggleResults = hasResults && (isCompleted || isCurrent);
                   
                   return (
                     <div key={`${state.id}-${index}`} className="border rounded-lg">
                       <div 
                         className={`flex items-center justify-between p-3 cursor-pointer ${
-                          isCompleted ? 'bg-green-50' : isCurrent ? 'bg-blue-50' : 'bg-gray-50'
+                          displayStatus === 'current' ? 'bg-blue-50' :
+                          displayStatus === 'completed' ? 'bg-green-50' : 'bg-gray-50'
                         }`}
                         onClick={() => {
-                          if (isCompleted && hasResults) {
+                          if (canToggleResults) {
                             setCollapsedStates(prev => {
                               const newSet = new Set(prev);
                               if (newSet.has(state.id as string)) {
@@ -1172,14 +1220,14 @@ Describe what happens in this step concisely. Start directly with the action, no
                       >
                         <div className="flex items-center space-x-3">
                           <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                            isCompleted ? 'bg-green-500 text-white' : 
-                            isCurrent ? 'bg-blue-500 text-white' : 
+                            displayStatus === 'current' ? 'bg-blue-500 text-white' :
+                            displayStatus === 'completed' ? 'bg-green-500 text-white' :
                             'bg-gray-300 text-gray-600'
                           }`}>
-                            {isCompleted ? (
-                              <Check className="h-3 w-3" />
-                            ) : isCurrent ? (
+                            {displayStatus === 'current' ? (
                               <div className="animate-spin h-3 w-3 border border-white border-t-transparent rounded-full"></div>
+                            ) : displayStatus === 'completed' ? (
+                              <Check className="h-3 w-3" />
                             ) : (
                               <span className="text-xs">{index + 1}</span>
                             )}
@@ -1187,12 +1235,16 @@ Describe what happens in this step concisely. Start directly with the action, no
                           <div>
                             <div className="text-sm font-medium text-gray-800">{state.id as string}</div>
                             <div className="text-xs text-gray-500">
-                              {isCompleted ? 'Completed' : isCurrent ? 'In Progress' : 'Pending'}
+                              {displayStatus === 'current'
+                                ? 'In Progress'
+                                : displayStatus === 'completed'
+                                  ? 'Completed'
+                                  : 'Pending'}
                             </div>
                           </div>
                         </div>
                         
-                        {isCompleted && hasResults && (
+                        {canToggleResults && (
                           <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${
                             isCollapsed ? 'transform rotate-180' : ''
                           }`} />

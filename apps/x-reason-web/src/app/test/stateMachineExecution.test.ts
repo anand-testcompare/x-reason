@@ -1,16 +1,101 @@
 import { StateConfig } from "../api/reasoning";
 import { createAgenticWorkflowTortureFixture } from "../api/reasoning/fixtures/agenticWorkflow";
 import {
+  buildStateExecutionPrompt,
   cloneStateConfigs,
   collectExecutableStates,
+  formatHumanApprovalDecisionResult,
+  getExecutionStepDisplayStatus,
   getStateLabel,
   matchTransitionTarget,
   runStateMachineInterpreter,
+  selectPlanUnderReview,
   selectHumanApprovalTransition,
+  selectReviewGateTransitionAfterRevision,
   stateRequiresHumanApproval,
 } from "../utils/stateMachineExecution";
 
 describe("stateMachineExecution", () => {
+  it("keeps ExecutePlan focused on approved launch execution", () => {
+    const prompt = buildStateExecutionPrompt({
+      stateName: "ExecutePlan",
+      query: "Launch a reef-safe SPF 50 mineral sunscreen stick for hikers.",
+      requestedChanges:
+        "Add pediatric dermatology safety review, reef-safe go/no-go gate, and delay influencers until pilot stability data.",
+    });
+
+    expect(prompt).toContain("approved launch workflow");
+    expect(prompt).toContain("Human requested changes that must be reflected");
+    expect(prompt).toContain("pediatric dermatology safety review");
+    expect(prompt).toContain("Do not give consumer usage instructions");
+  });
+
+  it("keeps human requested changes in the approval decision result", () => {
+    expect(
+      formatHumanApprovalDecisionResult({
+        decision: "changes_requested",
+        feedback: "Tighten the SPF claims and add compliance owners.",
+        stateLabel: "HumanApproval",
+      }),
+    ).toBe(
+      "HUMAN_DECISION: changes_requested HumanApproval\nREQUESTED_CHANGES: Tighten the SPF claims and add compliance owners.",
+    );
+
+    expect(
+      formatHumanApprovalDecisionResult({
+        decision: "approved",
+        feedback: "This should not be attached to approval.",
+        stateLabel: "HumanApproval",
+      }),
+    ).toBe("HUMAN_DECISION: approved HumanApproval");
+  });
+
+  it("shows a re-entered state as current instead of completed", () => {
+    expect(
+      getExecutionStepDisplayStatus({ isCompleted: true, isCurrent: true }),
+    ).toBe("current");
+    expect(
+      getExecutionStepDisplayStatus({ isCompleted: true, isCurrent: false }),
+    ).toBe("completed");
+    expect(
+      getExecutionStepDisplayStatus({ isCompleted: false, isCurrent: false }),
+    ).toBe("pending");
+  });
+
+  it("selects the latest revised plan for human review", () => {
+    const timestamp = new Date();
+
+    expect(
+      selectPlanUnderReview([
+        { state: "DraftPlan", result: "Initial plan", timestamp },
+        { state: "CritiquePlan", result: "Critique notes", timestamp },
+        { state: "HumanApproval", result: "Waiting for human approval.", timestamp },
+        { state: "HumanApproval", result: "HUMAN_DECISION: changes_requested HumanApproval", timestamp },
+        { state: "RevisePlan", result: "Revised plan with owner changes", timestamp },
+        { state: "CritiquePlan", result: "The revised plan is ready", timestamp },
+      ]),
+    ).toEqual({
+      state: "RevisePlan",
+      result: "Revised plan with owner changes",
+      timestamp,
+    });
+  });
+
+  it("falls back to the drafted plan when no revision exists", () => {
+    const timestamp = new Date();
+
+    expect(
+      selectPlanUnderReview([
+        { state: "DraftPlan", result: "Initial plan", timestamp },
+        { state: "ReviewCompliance", result: "Compliance notes", timestamp },
+      ]),
+    ).toEqual({
+      state: "DraftPlan",
+      result: "Initial plan",
+      timestamp,
+    });
+  });
+
   it("collects nested executable states without final or parallel container nodes", () => {
     const executableStates = collectExecutableStates(createAgenticWorkflowTortureFixture());
 
@@ -65,6 +150,34 @@ describe("stateMachineExecution", () => {
     expect(stateRequiresHumanApproval(critiquePlan!)).toBe(false);
     expect(selectHumanApprovalTransition("approved", transitions)).toBe("ExecutePlan");
     expect(selectHumanApprovalTransition("changes_requested", transitions)).toBe("RevisePlan");
+  });
+
+  it("routes review gates to approval after a revision cycle has completed", () => {
+    const transitions = [
+      { on: "CONTINUE", target: "RevisePlan", label: "RevisePlan" },
+      { on: "CONTINUE", target: "HumanApproval", label: "HumanApproval" },
+    ];
+
+    expect(
+      selectReviewGateTransitionAfterRevision("CritiquePlan", transitions, []),
+    ).toBeUndefined();
+
+    expect(
+      selectReviewGateTransitionAfterRevision("CritiquePlan", transitions, [
+        {
+          state: "CritiquePlan",
+          event: "transition",
+          target: "RevisePlan",
+          timestamp: new Date(),
+        },
+        {
+          state: "RevisePlan",
+          event: "complete",
+          result: "Revised plan",
+          timestamp: new Date(),
+        },
+      ]),
+    ).toBe("HumanApproval");
   });
 
   it("preserves source fixture ids when cloning before compilation", () => {

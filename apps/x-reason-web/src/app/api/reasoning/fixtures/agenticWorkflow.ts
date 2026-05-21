@@ -1,7 +1,7 @@
 import { StateConfig } from "@/app/api/reasoning";
 
 export const AGENTIC_WORKFLOW_SAMPLE_QUERY =
-  "Plan a launch workflow where research and compliance run in parallel, a reviewer can send the plan back for revision, and human approval is required before execution.";
+  "Launch a new SPF face cream.";
 
 export function getAgenticWorkflowSampleStateResult(stateLabel: string): string | undefined {
   const results: Record<string, string> = {

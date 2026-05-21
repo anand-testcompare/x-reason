@@ -28,28 +28,45 @@ export const ResponsiveContainer = ({ children }: { children: ReactNode }) => (
     </div>
 );
 
-export const JsonHighlighter = ({ json, className = "" }: { json: string; className?: string }) => {
+function escapeHtml(value: string) {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function highlightJson(json: string) {
+    return escapeHtml(json).replace(
+        /("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(?:\s*:)?|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
+        (match) => {
+            let className = 'text-orange-700';
+            if (/^"/.test(match)) {
+                className = /:$/.test(match) ? 'text-blue-700 font-semibold' : 'text-emerald-700';
+            } else if (/true|false|null/.test(match)) {
+                className = 'text-pink-700 font-semibold';
+            }
+
+            return `<span class="${className}">${match}</span>`;
+        },
+    );
+}
+
+export const JsonHighlighter = ({ json, className = "", indent = 1 }: { json: string; className?: string; indent?: number }) => {
     const highlightedJson = json ? (() => {
         try {
             const parsed = JSON.parse(json);
-            const formattedJson = JSON.stringify(parsed, null, 2);
-            
-            return formattedJson
-                .replace(/^(\s*)("(?:[^"\\]|\\.)*")(\s*:\s*)/gm, '$1<span style="color: #0066cc; font-weight: 600;">$2</span>$3')
-                .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span style="color: #008000;">$1</span>')
-                .replace(/:\s*(true|false|null)(?=\s*[,\}\]])/g, ': <span style="color: #cc0066; font-weight: 600;">$1</span>')
-                .replace(/:\s*(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)(?=\s*[,\}\]])/g, ': <span style="color: #ff6600;">$1</span>')
-                .replace(/([{}[\]])/g, '<span style="color: #666; font-weight: bold;">$1</span>')
-                .replace(/(,)$/gm, '<span style="color: #666; font-weight: bold;">$1</span>');
+            const formattedJson = JSON.stringify(parsed, null, indent);
+
+            return highlightJson(formattedJson);
         } catch (_e) {
-            return json;
+            return escapeHtml(json);
         }
     })() : '';
 
     return (
         <div className={className}>
             <pre 
-                className="whitespace-pre-wrap font-mono text-xs leading-relaxed h-full overflow-auto"
+                className="h-full overflow-auto whitespace-pre font-mono text-[11px] leading-5 text-slate-800"
                 dangerouslySetInnerHTML={{ __html: highlightedJson }}
             />
         </div>

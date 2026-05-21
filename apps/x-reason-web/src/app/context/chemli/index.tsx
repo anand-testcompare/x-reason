@@ -12,6 +12,69 @@ import UnsafeQuestion from "@/app/components/chemli/UnsafeQuestion";
 function getFunctionCatalog(dispatch: (action: ActionType) => void) {
     return new Map<string, Task>([
         [
+            "DraftPlan",
+            {
+                description: "Drafts an initial launch plan from the user's launch topic and product goals.",
+                implementation: (_context: Context, _event?: MachineEvent) => {
+                    console.log('DraftPlan implementation called');
+                },
+            },
+        ],
+        [
+            "ResearchMarket",
+            {
+                description: "Researches customer, market, competitor, channel, and timing constraints for a launch plan.",
+                implementation: (_context: Context, _event?: MachineEvent) => {
+                    console.log('ResearchMarket implementation called');
+                },
+            },
+        ],
+        [
+            "ReviewCompliance",
+            {
+                description: "Reviews policy, safety, claims, data handling, regulatory, and approval constraints for a launch plan.",
+                implementation: (_context: Context, _event?: MachineEvent) => {
+                    console.log('ReviewCompliance implementation called');
+                },
+            },
+        ],
+        [
+            "CritiquePlan",
+            {
+                description: "Reviewer checkpoint that critiques a draft plan and decides whether it needs revision or can advance to human approval.",
+                implementation: (_context: Context, _event?: MachineEvent) => {
+                    console.log('CritiquePlan implementation called');
+                },
+            },
+        ],
+        [
+            "RevisePlan",
+            {
+                description: "Revises a launch plan using reviewer feedback before sending it back through critique.",
+                implementation: (_context: Context, _event?: MachineEvent) => {
+                    console.log('RevisePlan implementation called');
+                },
+            },
+        ],
+        [
+            "HumanApproval",
+            {
+                description: "Pauses the workflow until a human approves execution or requests changes.",
+                implementation: (_context: Context, _event?: MachineEvent) => {
+                    console.log('HumanApproval implementation called');
+                },
+            },
+        ],
+        [
+            "ExecutePlan",
+            {
+                description: "Executes an approved launch plan after the human approval gate.",
+                implementation: (_context: Context, _event?: MachineEvent) => {
+                    console.log('ExecutePlan implementation called');
+                },
+            },
+        ],
+        [
             "RecallSolutions",
             {
                 description:
@@ -278,6 +341,48 @@ function getFunctionCatalog(dispatch: (action: ActionType) => void) {
 
 function getToolsCatalog() {
     return new Map<string, { description: string }>([
+        [
+            "DraftPlan",
+            {
+                description: "Drafts an initial launch plan from the user's launch topic and product goals.",
+            },
+        ],
+        [
+            "ResearchMarket",
+            {
+                description: "Researches customer, market, competitor, channel, and timing constraints for a launch plan.",
+            },
+        ],
+        [
+            "ReviewCompliance",
+            {
+                description: "Reviews policy, safety, claims, data handling, regulatory, and approval constraints for a launch plan.",
+            },
+        ],
+        [
+            "CritiquePlan",
+            {
+                description: "Reviewer checkpoint that critiques a draft plan and decides whether it needs revision or can advance to human approval.",
+            },
+        ],
+        [
+            "RevisePlan",
+            {
+                description: "Revises a launch plan using reviewer feedback before sending it back through critique.",
+            },
+        ],
+        [
+            "HumanApproval",
+            {
+                description: "Pauses the workflow until a human approves execution or requests changes.",
+            },
+        ],
+        [
+            "ExecutePlan",
+            {
+                description: "Executes an approved launch plan after the human approval gate.",
+            },
+        ],
         [
             "RecallSolutions",
             {
