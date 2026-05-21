@@ -62,6 +62,8 @@ export function getModelForProvider(provider: AIProvider, model?: AIModel): AIMo
 }
 
 const OIDC_HEADER = 'x-vercel-oidc-token';
+export const GATEWAY_AUTH_ERROR =
+  'Vercel OIDC auth is required for AI Gateway requests. Set VERCEL_OIDC_TOKEN for local development or run inside Vercel where x-vercel-oidc-token is provided.';
 
 function disableGatewayApiKeyFallback() {
   if (process.env.AI_GATEWAY_API_KEY) {
@@ -74,6 +76,18 @@ export function hasGatewayAuth(headers?: Headers | null): boolean {
   return Boolean(
     process.env.VERCEL_OIDC_TOKEN ||
     headers?.has(OIDC_HEADER)
+  );
+}
+
+export function isGatewayAuthenticationError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+
+  const { name, message } = error as { name?: string; message?: string };
+
+  return (
+    name === 'GatewayAuthenticationError' ||
+    Boolean(message?.includes('Unauthenticated request to AI Gateway')) ||
+    Boolean(message?.includes('AI_GATEWAY_API_KEY'))
   );
 }
 

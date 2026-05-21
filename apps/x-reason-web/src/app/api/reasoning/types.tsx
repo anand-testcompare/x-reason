@@ -86,6 +86,7 @@ export type Interpreter = {
 
 export type StateConfig = {
   id: string;
+  task?: string;
   transitions?: Array<{
     on: string;
     target: string;

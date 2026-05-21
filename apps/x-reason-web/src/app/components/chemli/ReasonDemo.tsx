@@ -10,11 +10,8 @@ import {
     useAgentDemo,
     AgentSubmissionLogic 
 } from "@/app/templates";
-import { parseStateMachineJson } from "@/app/utils";
-import {
-    AGENTIC_WORKFLOW_SAMPLE_QUERY,
-    createAgenticWorkflowTortureFixture,
-} from "@/app/api/reasoning/fixtures/agenticWorkflow";
+import { normalizeLaunchWorkflowStateIds, parseStateMachineJson } from "@/app/utils";
+import { AGENTIC_WORKFLOW_SAMPLE_QUERY } from "@/app/api/reasoning/fixtures/agenticWorkflow";
 
 // Chemli-specific submission logic
 const chemliSubmissionLogic: AgentSubmissionLogic = async ({
@@ -27,24 +24,6 @@ const chemliSubmissionLogic: AgentSubmissionLogic = async ({
     setComponentToRender,
     aiConfig
 }) => {
-    if (userQuery.trim() === AGENTIC_WORKFLOW_SAMPLE_QUERY) {
-        dispatch({
-            type: "SET_STATE",
-            value: {
-                states: createAgenticWorkflowTortureFixture(),
-                solution:
-                    "Agentic workflow fixture: parallel discovery, critique/revision loop, human approval, and final execution.",
-                query: userQuery,
-                currentState: undefined,
-                context: undefined,
-                event: undefined,
-            }
-        });
-
-        setComponentToRender(<Success message="Agentic workflow loaded. Review the generated state machine below." />);
-        return;
-    }
-
     // Check if required dependencies are available
     if (!solver) {
         setComponentToRender(<Error message="Solver not initialized. Please refresh the page." />);
@@ -128,7 +107,7 @@ const chemliSubmissionLogic: AgentSubmissionLogic = async ({
     dispatch({
         type: "SET_STATE",
         value: {
-            states: programResult,
+            states: normalizeLaunchWorkflowStateIds(programResult),
             solution: solverResult,
             query: userQuery,
             currentState: undefined,
@@ -162,7 +141,7 @@ const chemliConfig: AgentConfig = {
     processingButtonText: "Generating Formula...",
     sampleQueries,
     sampleQueryBadges: {
-        [AGENTIC_WORKFLOW_SAMPLE_QUERY]: "Parallel",
+        [AGENTIC_WORKFLOW_SAMPLE_QUERY]: "Launch",
     },
     layout: 'grid',
     features: {

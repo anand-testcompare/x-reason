@@ -1,5 +1,14 @@
 import { NextRequest } from "next/server";
-import { getAIModel, getModelForProvider, AIConfig, AIMessage, DEFAULT_PROVIDER } from "../providers";
+import {
+  GATEWAY_AUTH_ERROR,
+  getAIModel,
+  getModelForProvider,
+  hasGatewayAuth,
+  isGatewayAuthenticationError,
+  AIConfig,
+  AIMessage,
+  DEFAULT_PROVIDER,
+} from "../providers";
 import { streamText, generateText } from 'ai';
 import { AILogger } from "../../../utils/aiLogger";
 
@@ -41,6 +50,14 @@ export async function POST(request: NextRequest) {
       return new Response(
         JSON.stringify({ error: `Invalid provider. Must be one of: ${validProviders.join(', ')}` }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!hasGatewayAuth(request.headers)) {
+      console.log(`🌐 [API-ROUTE] Missing Vercel OIDC auth (Request ID: ${requestId})`);
+      return new Response(
+        JSON.stringify({ error: GATEWAY_AUTH_ERROR }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
@@ -86,6 +103,13 @@ export async function POST(request: NextRequest) {
     return result.toTextStreamResponse();
   } catch (error) {
     console.log(`🌐 [API-ROUTE] Error processing request (Request ID: ${requestId}):`, error);
+    if (isGatewayAuthenticationError(error)) {
+      return new Response(
+        JSON.stringify({ error: GATEWAY_AUTH_ERROR }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }

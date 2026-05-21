@@ -4,8 +4,18 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
-import { Eye, EyeOff, Play, Square, RotateCcw, ExternalLink, GitBranch, Maximize2 } from 'lucide-react';
+import { ArrowDown, Eye, EyeOff, Play, Square, RotateCcw, ExternalLink, GitBranch, Maximize2 } from 'lucide-react';
 import { initializeInspector, isInspectorInitialized } from '@/app/lib/inspector';
+import {
+  generateSourceMermaidDiagram,
+  getExecutableVisualizationStateCount,
+  getOnDoneTargetIds,
+  getPrimaryTransitionTarget,
+  getTransitionDisplayLabel,
+  getVisibleVisualizationStates,
+  getVisualizationStateLabel,
+  VisualizationStateConfig,
+} from '@/app/utils';
 import mermaid from 'mermaid';
 
 // XState v5 types
@@ -77,6 +87,7 @@ function shouldRenderChildren(stateConfig?: MermaidStateConfig) {
 
 interface StateMachineVisualizerProps {
   machine: StateMachineConfig | null;
+  stateConfigs?: VisualizationStateConfig[];
   interpreter?: StateMachineInterpreter | null;
   className?: string;
   stepsMap?: Map<string, {id: string, func: unknown, type?: 'pause' | 'async'}>;
@@ -92,6 +103,7 @@ interface StateTransition {
 
 export function StateMachineVisualizer({
   machine,
+  stateConfigs,
   interpreter,
   className = "",
   stepsMap,
@@ -106,6 +118,7 @@ export function StateMachineVisualizer({
   const [showGraph, setShowGraph] = useState(inline);
   const mermaidRef = useRef<HTMLDivElement>(null);
   const [mermaidInitialized, setMermaidInitialized] = useState(false);
+  const hasSourceStateConfigs = Boolean(stateConfigs?.length);
 
   useEffect(() => {
     if (!interpreter) return;
@@ -145,6 +158,10 @@ export function StateMachineVisualizer({
 
   // Generate Mermaid diagram based on actual machine config
   const generateMermaidDiagram = useCallback(() => {
+    if (stateConfigs?.length) {
+      return generateSourceMermaidDiagram(stateConfigs);
+    }
+
     if (!machine) return '';
 
     const states = machine.config?.states || machine.states || {};
@@ -211,7 +228,7 @@ export function StateMachineVisualizer({
     mermaid += '    ' + getStateNodeId('failure') + ' --> [*]\n';
 
     return mermaid;
-  }, [machine]);
+  }, [machine, stateConfigs]);
 
   // Initialize Mermaid
   useEffect(() => {
@@ -267,13 +284,13 @@ export function StateMachineVisualizer({
   }, [showGraph, machine, currentState, mermaidInitialized, generateMermaidDiagram]);
 
   const copyMachineConfig = async () => {
-    if (!machine) {
+    if (!machine && !stateConfigs?.length) {
       alert('No machine available');
       return;
     }
 
     try {
-      const machineCode = JSON.stringify(machine.config || machine, null, 2);
+      const machineCode = JSON.stringify(stateConfigs?.length ? { states: stateConfigs } : machine?.config || machine, null, 2);
       await navigator.clipboard.writeText(machineCode);
       alert('Machine config copied to clipboard!');
     } catch (error) {
@@ -348,19 +365,169 @@ export function StateMachineVisualizer({
     console.warn('Stately Viz URL generation not available without stepsMap');
   };
 
+  const renderTransitionChips = (state: VisualizationStateConfig) => {
+    const transitions = state.transitions || [];
+    const onDoneTargets = getOnDoneTargetIds(state);
+    if (!transitions.length && !onDoneTargets.length) return null;
+
+    return (
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {transitions.map((transition, index) => {
+          const isError = transition.on === 'ERROR';
+          return (
+            <span
+              key={`${transition.on}-${transition.target}-${index}`}
+              className={`rounded border px-2 py-0.5 text-[11px] font-medium ${
+                isError
+                  ? 'border-rose-200 bg-rose-50 text-rose-700'
+                  : 'border-teal-200 bg-teal-50 text-teal-800'
+              }`}
+            >
+              {getTransitionDisplayLabel(state, transition)} -&gt; {getVisualizationStateLabel(transition.target)}
+            </span>
+          );
+        })}
+        {onDoneTargets.map((target, index) => (
+          <span
+            key={`done-${target}-${index}`}
+            className="rounded border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-800"
+          >
+            all lanes complete -&gt; {getVisualizationStateLabel(target)}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  const renderSourceStateCard = (state: VisualizationStateConfig) => {
+    const label = getVisualizationStateLabel(state.id);
+    const isParallel = state.type === 'parallel';
+    const isHumanGate =
+      label.toLowerCase().includes('humanapproval') ||
+      (state.task || '').toLowerCase().includes('human approval');
+    const visibleChildren = getVisibleVisualizationStates(state.states);
+
+    return (
+      <div
+        key={state.id}
+        className={`rounded-md border bg-white p-3 shadow-sm ${
+          isHumanGate
+            ? 'border-amber-300 bg-amber-50/70'
+            : isParallel
+              ? 'border-cyan-300 bg-cyan-50/70'
+              : 'border-slate-200'
+        }`}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <div className="font-mono text-sm font-semibold text-slate-900">{label}</div>
+            {state.task && (
+              <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-600">{state.task}</p>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {isParallel && (
+              <Badge variant="outline" className="border-cyan-300 bg-white text-[10px] uppercase text-cyan-800">
+                parallel
+              </Badge>
+            )}
+            {state.includesLogic && (
+              <Badge variant="outline" className="border-violet-300 bg-white text-[10px] uppercase text-violet-800">
+                branch
+              </Badge>
+            )}
+            {isHumanGate && (
+              <Badge variant="outline" className="border-amber-300 bg-white text-[10px] uppercase text-amber-800">
+                human gate
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {isParallel && visibleChildren.length > 0 && (
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {visibleChildren.map((child, childIndex) => (
+              <div key={`${state.id}:child:${child.id}:${childIndex}`} className="rounded-md border border-cyan-200 bg-white p-3">
+                <div className="font-mono text-xs font-semibold text-slate-900">
+                  {getVisualizationStateLabel(child.id)}
+                </div>
+                {child.task && (
+                  <p className="mt-1 text-xs leading-5 text-slate-600">{child.task}</p>
+                )}
+                {renderTransitionChips(child)}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {renderTransitionChips(state)}
+      </div>
+    );
+  };
+
+  const renderSourceWorkflowMap = () => {
+    const visibleStates = getVisibleVisualizationStates(stateConfigs);
+    const executableCount = getExecutableVisualizationStateCount(stateConfigs);
+
+    if (!visibleStates.length) return null;
+
+    return (
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+          <div>
+            <div className="text-sm font-semibold text-slate-900">Generated workflow map</div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant="outline" className="bg-white text-xs">
+              source DSL
+            </Badge>
+            <Badge variant="outline" className="bg-white text-xs">
+              {executableCount} executable steps
+            </Badge>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {visibleStates.map((state, index) => {
+            const nextTarget = getPrimaryTransitionTarget(state) || getOnDoneTargetIds(state)[0];
+            const shouldDrawArrow =
+              index < visibleStates.length - 1 &&
+              nextTarget &&
+              getVisualizationStateLabel(nextTarget) === getVisualizationStateLabel(visibleStates[index + 1].id);
+
+            return (
+              <React.Fragment key={`${state.id}:${index}`}>
+                {renderSourceStateCard(state)}
+                {shouldDrawArrow && (
+                  <div className="flex justify-center text-slate-300" aria-hidden="true">
+                    <ArrowDown className="h-4 w-4" />
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+
+      </div>
+    );
+  };
+
   // For inline mode, skip the floating overlay behavior
   if (inline) {
     return (
       <div className={`w-full ${className}`}>
-        {/* Mermaid Diagram Container */}
-        <div
-          ref={mermaidRef}
-          className="border rounded-md w-full p-4 bg-white"
-          style={{
-            minHeight: '200px',
-            border: '1px solid #d1d5db'
-          }}
-        />
+        {hasSourceStateConfigs ? (
+          renderSourceWorkflowMap()
+        ) : (
+          <div
+            ref={mermaidRef}
+            className="border rounded-md w-full p-4 bg-white"
+            style={{
+              minHeight: '200px',
+              border: '1px solid #d1d5db'
+            }}
+          />
+        )}
 
         {/* Controls for inline mode */}
         <div className="mt-3 flex items-center justify-between">

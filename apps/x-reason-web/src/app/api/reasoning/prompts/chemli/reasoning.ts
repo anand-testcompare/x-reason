@@ -800,7 +800,15 @@ Explanation: The states and transitions are correct and the use of parallel stat
 
 export async function solver(query: string) {
   // Define the persona and task for the AI model
-  const system = `You are a helpful AI assistant tasked with assisting company operations for consumer cosmetic, food, and beverage product manufacturers. Your job is to reason about how to solve complex problems like product formulation, manufacturing, marketing, etc.`;
+  const system = `You are a helpful AI assistant tasked with assisting company operations for consumer cosmetic, food, and beverage product manufacturers. Your job is to reason about how to solve complex problems like product formulation, manufacturing, marketing, launches, and operational approval workflows.
+
+When the user asks for a launch plan or launch workflow, treat the user's wording as the launch topic. Do not require the user to describe control flow. Use this workflow pattern:
+1. Draft the initial launch plan.
+2. Run market research and compliance review in parallel.
+3. Have a reviewer critique the plan.
+4. If the reviewer requests changes, revise the plan and send it back to critique.
+5. Require human approval before execution.
+6. Execute only after approval.`;
 
   // List of subproblems and their descriptions
   const user = `
@@ -882,6 +890,14 @@ Q: Create regulatory checks for vanilla face cream
 A: 1. Recall solution for vanilla face cream
 2. If a solution is not found, exit. If a solution is found run regulatory checks
 
+Q: Launch a new SPF face cream.
+A: 1. Draft the initial launch plan.
+2. In parallel, research the market and review compliance requirements.
+3. Have a reviewer critique the plan.
+4. If the reviewer requests changes, revise the plan and send it back for critique. If the reviewer accepts the plan, continue to human approval.
+5. Wait for human approval before execution.
+6. If the human requests changes, revise the plan and send it back for critique. If the human approves, execute the plan.
+
 # Unsupported Question Types
 
 Questions unrelated to Chemical Product Development, or those questions that are unsafe such as those asking for weapons
@@ -933,6 +949,12 @@ export async function programmer(query: string, functionCatalog: string) {
   X-Reason never outputs a state where the id is not found in your training data
   X-Reason is never chatty.
   X-Reason always respond in JSON that conforms to the the X-Reason DSL.
+  Workflow primitives are first-class tools. Use DraftPlan, ResearchMarket, ReviewCompliance, CritiquePlan, RevisePlan, HumanApproval, and ExecutePlan when the task list describes a launch plan, reviewer loop, human approval gate, or execution gate.
+  For launch workflows, use the exact state id ResearchMarket; do not use the legacy alias MarketResearch.
+  HumanApproval is not a normal AI step. It is a manual gate that waits for the human to approve or request changes before the machine may transition.
+  A reviewer loop must be represented structurally: CritiquePlan can transition to RevisePlan or HumanApproval, and RevisePlan must transition back to CritiquePlan.
+  ResearchMarket and ReviewCompliance must run inside a parallel state when the task list says research and compliance run in parallel.
+  ExecutePlan must only be reachable from HumanApproval or an equivalent approved gate.
   ### Start X-Reason DSL TypeScript definition ###
   \`\`\`
   export type StateConfig = {
@@ -1028,7 +1050,72 @@ Let's looks at another example of if/else logic:
 }
 In this solution "If an existing solution can be used proceed to an ingredients database search" is represented by the { "on": "CONTINUE", "target": "IngredientDatabase" } transition and "Else generate the ingredients list." is represented by the { "on": "CONTINUE", "target": "GenerateIngredientsList" } transition
 There are only two acceptable event values for the "on" attribute: "CONTINUE" and "ERROR". The "ERROR" event can only target the "failure" state
-4. Make sure all state ID values in the state machine correspond to a value found in function catalog below. DO NOT INVENT YOUR OWN STATES!!!
+4. For launch workflows, use this structural pattern instead of relying on descriptive prompt text:
+[
+  {
+    "id": "DraftPlan",
+    "transitions": [
+      { "on": "CONTINUE", "target": "ParallelDiscovery" },
+      { "on": "ERROR", "target": "failure" }
+    ]
+  },
+  {
+    "id": "ParallelDiscovery",
+    "type": "parallel",
+    "states": [
+      {
+        "id": "ResearchMarket",
+        "transitions": [
+          { "on": "CONTINUE", "target": "success" },
+          { "on": "ERROR", "target": "failure" }
+        ]
+      },
+      {
+        "id": "ReviewCompliance",
+        "transitions": [
+          { "on": "CONTINUE", "target": "success" },
+          { "on": "ERROR", "target": "failure" }
+        ]
+      },
+      { "id": "success", "type": "final" },
+      { "id": "failure", "type": "final" }
+    ],
+    "onDone": "CritiquePlan"
+  },
+  {
+    "id": "CritiquePlan",
+    "transitions": [
+      { "on": "CONTINUE", "target": "RevisePlan" },
+      { "on": "CONTINUE", "target": "HumanApproval" },
+      { "on": "ERROR", "target": "failure" }
+    ]
+  },
+  {
+    "id": "RevisePlan",
+    "transitions": [
+      { "on": "CONTINUE", "target": "CritiquePlan" },
+      { "on": "ERROR", "target": "failure" }
+    ]
+  },
+  {
+    "id": "HumanApproval",
+    "transitions": [
+      { "on": "CONTINUE", "target": "ExecutePlan" },
+      { "on": "CONTINUE", "target": "RevisePlan" },
+      { "on": "ERROR", "target": "failure" }
+    ]
+  },
+  {
+    "id": "ExecutePlan",
+    "transitions": [
+      { "on": "CONTINUE", "target": "success" },
+      { "on": "ERROR", "target": "failure" }
+    ]
+  },
+  { "id": "success", "type": "final" },
+  { "id": "failure", "type": "final" }
+]
+5. Make sure all state ID values in the state machine correspond to a value found in function catalog below. DO NOT INVENT YOUR OWN STATES!!!
 Function Catalog:
 ${functionCatalog}
 
