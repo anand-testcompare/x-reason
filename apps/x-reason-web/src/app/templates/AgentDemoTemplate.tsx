@@ -122,7 +122,7 @@ export const SampleQueries = ({ samples, onSelect, disabled, isExpanded, sampleB
                 <p className="text-xs text-muted-foreground mb-3">
                     Sample Requests (click to use):
                 </p>
-                <div className="flex flex-wrap gap-1 mb-3 overflow-hidden">
+                <div className="-m-0.5 mb-2 flex flex-wrap gap-1 overflow-visible p-0.5">
                     {samples.map((sample, index) => {
                         const isLong = sample.length > truncationLength;
                         const displayText = isLong ? `${sample.substring(0, truncationLength)}...` : sample;
@@ -135,19 +135,19 @@ export const SampleQueries = ({ samples, onSelect, disabled, isExpanded, sampleB
                                 size="sm"
                                 onClick={() => onSelect(sample)}
                                 disabled={disabled}
-                                className={`text-xs min-h-7 h-auto px-2 py-1 max-w-[calc(100%-0.25rem)] flex-shrink min-w-0 break-words ${
+                                className={`h-auto min-h-7 max-w-full min-w-0 shrink px-2 py-1 text-xs whitespace-normal ${
                                     badge
                                         ? 'border-amber-300 bg-amber-50 text-amber-950 hover:bg-amber-100'
                                         : ''
                                 }`}
                             >
-                                <span className="flex min-w-0 items-center gap-1.5">
+                                <span className="flex min-w-0 max-w-full items-center gap-1.5">
                                     {badge && (
                                         <span className="shrink-0 rounded border border-amber-300 bg-white px-1 py-0.5 text-[10px] font-semibold uppercase leading-none text-amber-800">
                                             {badge}
                                         </span>
                                     )}
-                                    <span className="truncate block w-full text-left">{displayText}</span>
+                                    <span className="block min-w-0 truncate text-left">{displayText}</span>
                                 </span>
                             </Button>
                         );

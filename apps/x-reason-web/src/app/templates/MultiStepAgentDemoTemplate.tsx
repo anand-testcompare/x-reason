@@ -10,7 +10,7 @@ import { StateMachineVisualizer } from "@/app/components/StateMachineVisualizer"
 import { AgentDemoTemplateProps, ResponsiveContainer, SampleQueries, JsonHighlighter } from "./AgentDemoTemplate";
 import { Textarea } from "@/app/components/ui/textarea";
 import { AIProviderSelector } from "@/app/components/ui/ai-provider-selector";
-import { ArrowUp, ArrowLeft, ArrowRight, Play, Copy, Check, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowUp, ArrowLeft, ArrowRight, Play, Copy, Check, ChevronDown, ChevronRight, FileText } from 'lucide-react';
 import Interpreter from "@/app/api/reasoning/Interpreter.v1.headed";
 import { LocalStorage } from "@/app/components";
 import { programV1, StateConfig, Task } from '@/app/api/reasoning';
@@ -1173,8 +1173,8 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
         )}
 
         {/* Execution Checklist */}
-        <div className="border rounded-lg bg-white max-h-[500px] overflow-y-auto">
-          <div className="p-4">
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <div className="max-h-[500px] overflow-y-auto p-4 [scrollbar-gutter:stable]">
             <h4 className="text-sm font-semibold mb-4 flex items-center">
               <div className="h-2 w-2 bg-green-500 rounded-full mr-2"></div>
               Execution Progress
@@ -1198,11 +1198,11 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
                   const canToggleResults = hasResults && (isCompleted || isCurrent);
                   
                   return (
-                    <div key={`${state.id}-${index}`} className="border rounded-lg">
+                    <div key={`${state.id}-${index}`} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
                       <div 
-                        className={`flex items-center justify-between p-3 cursor-pointer ${
+                        className={`flex cursor-pointer items-center justify-between gap-3 p-3 ${
                           displayStatus === 'current' ? 'bg-blue-50' :
-                          displayStatus === 'completed' ? 'bg-green-50' : 'bg-gray-50'
+                          displayStatus === 'completed' ? 'bg-green-50' : 'bg-slate-50'
                         }`}
                         onClick={() => {
                           if (canToggleResults) {
@@ -1218,8 +1218,8 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
                           }
                         }}
                       >
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
                             displayStatus === 'current' ? 'bg-blue-500 text-white' :
                             displayStatus === 'completed' ? 'bg-green-500 text-white' :
                             'bg-gray-300 text-gray-600'
@@ -1232,8 +1232,8 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
                               <span className="text-xs">{index + 1}</span>
                             )}
                           </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-800">{state.id as string}</div>
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-medium text-gray-800">{state.id as string}</div>
                             <div className="text-xs text-gray-500">
                               {displayStatus === 'current'
                                 ? 'In Progress'
@@ -1253,7 +1253,7 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
 
                       {/* Expandable content - show when not collapsed */}
                       {hasResults && !isCollapsed && (
-                        <div className="border-t bg-white">
+                        <div className="border-t border-slate-200 bg-white">
                           <div className="p-3 space-y-2">
                             {executionResults
                               .filter(result => result.state === state.id as string)
@@ -1301,17 +1301,17 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-between gap-2">
-          <Button onClick={handleBack} variant="outline" size="lg" className="w-full sm:w-auto">
+        <div className="grid gap-2 lg:grid-cols-[max-content_minmax(0,1fr)] lg:items-center">
+          <Button onClick={handleBack} variant="outline" size="lg" className="w-full min-w-0 px-4 sm:px-6 lg:w-auto">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Visualization
           </Button>
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap lg:justify-end">
             {!isExecuting && (
               <Button
                 onClick={executeStateMachine}
                 size="lg"
-                className={`w-full sm:w-auto ${hasExecutedBefore ? "bg-gray-500 hover:bg-gray-600" : "bg-green-600 hover:bg-green-700"}`}
+                className={`w-full min-w-0 px-4 sm:px-6 lg:w-auto ${hasExecutedBefore ? "bg-gray-500 hover:bg-gray-600" : "bg-green-600 hover:bg-green-700"}`}
               >
                 <Play className="mr-2 h-4 w-4" />
                 {hasExecutedBefore ? 'Re-execute' : 'Execute'}
@@ -1322,11 +1322,12 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
               variant="outline"
               size="lg"
               disabled={!executionResults.length || isExecuting}
-              className={`w-full sm:w-auto ${!executionResults.length || isExecuting ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`w-full min-w-0 px-4 sm:px-6 lg:w-auto ${!executionResults.length || isExecuting ? "opacity-50 cursor-not-allowed" : ""}`}
             >
-              📄 Download Report
+              <FileText className="mr-2 h-4 w-4" />
+              Download Report
             </Button>
-            <Button onClick={() => setCurrentStep(0)} variant="outline" size="lg" className="w-full sm:w-auto">
+            <Button onClick={() => setCurrentStep(0)} variant="outline" size="lg" className="w-full min-w-0 px-4 sm:px-6 lg:w-auto">
               Start New Task
             </Button>
           </div>
