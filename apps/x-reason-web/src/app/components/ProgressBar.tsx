@@ -16,14 +16,14 @@ interface ProgressBarProps {
 
 export const ProgressBar: React.FC<ProgressBarProps> = ({ steps, currentStep, className }) => {
   return (
-    <div className={cn("w-full", className)}>
-      <div className="flex items-center justify-between">
+    <div className={cn("w-full px-2 sm:px-3", className)}>
+      <div className="flex items-start">
         {steps.map((step, index) => (
           <React.Fragment key={step.id}>
-            <div className="flex flex-col items-center">
+            <div className="flex shrink-0 flex-col items-center">
               <div
                 className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
+                  "flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium transition-colors",
                   index < currentStep
                     ? "bg-primary text-primary-foreground"
                     : index === currentStep
@@ -49,12 +49,12 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ steps, currentStep, cl
                   index + 1
                 )}
               </div>
-              <span className="mt-2 text-xs text-center max-w-[100px]">{step.label}</span>
+              <span className="mt-2 max-w-[100px] text-center text-xs">{step.label}</span>
             </div>
             {index < steps.length - 1 && (
               <div
                 className={cn(
-                  "flex-1 h-0.5 mx-2 transition-colors",
+                  "mx-2 mt-5 h-0.5 min-w-0 flex-1 transition-colors",
                   index < currentStep ? "bg-primary" : "bg-muted"
                 )}
               />
