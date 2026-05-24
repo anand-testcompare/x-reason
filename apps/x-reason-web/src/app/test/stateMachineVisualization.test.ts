@@ -1,6 +1,6 @@
 import { createAgenticWorkflowTortureFixture } from "../api/reasoning/fixtures/agenticWorkflow";
 import {
-  generateSourceMermaidDiagram,
+  buildVisualizationFlowGraph,
   getExecutableVisualizationStateCount,
   getTransitionDisplayLabel,
   getVisibleVisualizationStates,
@@ -11,14 +11,48 @@ describe("stateMachineVisualization", () => {
   const fixture = createAgenticWorkflowTortureFixture() as VisualizationStateConfig[];
 
   it("keeps source DSL topology instead of flattening branches", () => {
-    const diagram = generateSourceMermaidDiagram(fixture);
+    const graph = buildVisualizationFlowGraph(fixture);
+    const parallelNode = graph.nodes.find((node) => node.data.label === "ParallelDiscovery")!;
+    const researchNode = graph.nodes.find((node) => node.data.label === "ResearchMarket")!;
+    const complianceNode = graph.nodes.find((node) => node.data.label === "ReviewCompliance")!;
+    const completionEdge = graph.edges.find(
+      (edge) => edge.source === parallelNode.id && edge.target.includes("CritiquePlan"),
+    );
+    const loopEdge = graph.edges.find(
+      (edge) => edge.source.includes("RevisePlan") && edge.target.includes("CritiquePlan"),
+    );
+    const globalErrorNode = graph.nodes.find((node) => node.data.kind === "globalError")!;
+    const errorEdges = graph.edges.filter((edge) => edge.data?.kind === "error");
 
-    expect(diagram).toContain('state "ParallelDiscovery (parallel)"');
-    expect(diagram).toContain('state "ResearchMarket"');
-    expect(diagram).toContain('state "ReviewCompliance"');
-    expect(diagram).toContain("state_ParallelDiscovery --> state_CritiquePlan: all lanes complete");
-    expect(diagram).toContain("state_RevisePlan --> state_CritiquePlan: CONTINUE");
-    expect(diagram).not.toContain("state_RevisePlan --> state_HumanApproval: CONTINUE");
+    expect(parallelNode.data.kind).toBe("parallel");
+    expect(researchNode.parentId).toBe(parallelNode.id);
+    expect(complianceNode.parentId).toBe(parallelNode.id);
+    expect(parallelNode.data.badges).not.toContain("error path");
+    expect(researchNode.data.badges).not.toContain("error path");
+    expect(globalErrorNode.data.label).toBe("Global error");
+    expect(errorEdges).toHaveLength(1);
+    expect(errorEdges[0].source).toBe(globalErrorNode.id);
+    expect(completionEdge?.label).toBe("All lanes complete");
+    expect(completionEdge?.data?.kind).toBe("completion");
+    expect(loopEdge?.data?.kind).toBe("loop");
+    expect(loopEdge?.type).toBe("smoothstep");
+    expect(graph.edges.some((edge) => edge.type === "default")).toBe(false);
+    expect(
+      graph.edges.some((edge) => edge.source.includes("RevisePlan") && edge.target.includes("HumanApproval")),
+    ).toBe(false);
+  });
+
+  it("uses a compact vertical layout with explicit routing handles", () => {
+    const graph = buildVisualizationFlowGraph(fixture);
+    const startNode = graph.nodes.find((node) => node.data.label === "Start")!;
+    const draftNode = graph.nodes.find((node) => node.data.label === "DraftPlan")!;
+    const startEdge = graph.edges.find((edge) => edge.source === startNode.id && edge.target === draftNode.id)!;
+
+    expect(draftNode.position.y).toBeGreaterThan(startNode.position.y);
+    expect(Math.abs(draftNode.position.x - startNode.position.x)).toBeLessThan(120);
+    expect(startEdge.sourceHandle).toBe("bottom-source");
+    expect(startEdge.targetHandle).toBe("top-target");
+    expect(graph.edges.some((edge) => String(edge.type) === "bezier")).toBe(false);
   });
 
   it("counts parallel child steps as executable work", () => {
@@ -31,6 +65,28 @@ describe("stateMachineVisualization", () => {
       "HumanApproval",
       "ExecutePlan",
     ]);
+  });
+
+  it("badges disconnected generated states as unreachable", () => {
+    const graph = buildVisualizationFlowGraph([
+      {
+        id: "ConnectedStart",
+        transitions: [{ on: "CONTINUE", target: "ConnectedEnd" }],
+      },
+      {
+        id: "ConnectedEnd",
+        transitions: [{ on: "CONTINUE", target: "success" }],
+      },
+      {
+        id: "DisconnectedMarketResearch",
+        transitions: [{ on: "CONTINUE", target: "success" }],
+      },
+      { id: "success", type: "final" },
+      { id: "failure", type: "final" },
+    ]);
+
+    const disconnectedNode = graph.nodes.find((node) => node.data.label === "DisconnectedMarketResearch")!;
+    expect(disconnectedNode.data.badges).toContain("unreachable");
   });
 
   it("names reviewer and human gate transitions by intent", () => {

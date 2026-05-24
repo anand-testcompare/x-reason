@@ -1,13 +1,34 @@
+import React from "react";
 import { render } from "@testing-library/react";
 
 import { StateMachineVisualizer } from "../components/StateMachineVisualizer";
 import { VisualizationStateConfig } from "../utils";
 
-jest.mock("mermaid", () => ({
-  __esModule: true,
-  default: {
-    initialize: jest.fn(),
-    render: jest.fn(),
+jest.mock("@xyflow/react", () => ({
+  Background: () => <div data-testid="flow-background" />,
+  Controls: () => <div data-testid="flow-controls" />,
+  Handle: () => <span data-testid="flow-handle" />,
+  MarkerType: { ArrowClosed: "arrowclosed" },
+  MiniMap: () => <div data-testid="flow-minimap" />,
+  Position: { Top: "top", Bottom: "bottom", Left: "left", Right: "right" },
+  ReactFlow: ({ nodes, edges }: { nodes: Array<{ id: string; data: { label: string } }>; edges: Array<{ id: string; label?: string }> }) => (
+    <div data-testid="react-flow">
+      {nodes.map((node) => (
+        <div key={node.id}>{node.data.label}</div>
+      ))}
+      {edges.map((edge) => (
+        <div key={edge.id}>{edge.label}</div>
+      ))}
+    </div>
+  ),
+  ReactFlowProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  useEdgesState: (initialEdges: unknown[]) => {
+    const [edges, setEdges] = React.useState(initialEdges);
+    return [edges, setEdges, () => undefined];
+  },
+  useNodesState: (initialNodes: unknown[]) => {
+    const [nodes, setNodes] = React.useState(initialNodes);
+    return [nodes, setNodes, () => undefined];
   },
 }));
 

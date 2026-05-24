@@ -16,10 +16,8 @@ import { parseStateMachineJson } from "@/app/utils";
 const sampleQueries = [
     "I want to register for the free tier with no extras",
     "I'd like to sign up for the premium plan with all features",
-    "Register me for the plus tier but skip partner plugins",
-    "I'm a returning visitor, show me special offers for the premium plan",
-    "Quick signup for free tier, I don't want to see extras",
-    "I want the most expensive plan with all the bells and whistles"
+    "Register me for plus, include partner plugins, but skip special offers",
+    "I'm a returning visitor, show me special offers for the premium plan"
 ];
 
 // Regie-specific submission logic

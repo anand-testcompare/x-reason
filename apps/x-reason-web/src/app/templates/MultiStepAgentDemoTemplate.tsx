@@ -958,7 +958,7 @@ export function MultiStepAgentDemoTemplate({ config, hookReturn, inputRef }: Age
           Review the generated state machine before execution
         </p>
 
-        <div className="border rounded-lg bg-white min-h-[400px] flex flex-col">
+        <div className="min-h-[400px] overflow-hidden rounded-lg border bg-white flex flex-col">
           {compiledMachine ? (
             <>
               <div className="p-4 border-b bg-gray-50">
