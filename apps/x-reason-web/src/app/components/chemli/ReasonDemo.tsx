@@ -122,12 +122,8 @@ const chemliSubmissionLogic: AgentSubmissionLogic = async ({
 // Sample chemical development queries to help users understand what Chemli can do
 const sampleQueries = [
     AGENTIC_WORKFLOW_SAMPLE_QUERY,
-    "Create a moisturizing face cream formula with SPF protection",
-    "I need a sulfate-free shampoo for dry hair with natural ingredients",
-    "Develop a long-lasting lipstick formula with high pigmentation",
-    "Design an anti-aging serum with peptides and hyaluronic acid",
-    "Create a gentle baby lotion formula without harsh chemicals",
-    "I want to formulate a natural deodorant with antibacterial properties"
+    "Launch a refillable hotel shampoo concentrate.",
+    "Launch a mineral sunscreen stick for hikers."
 ];
 
 // Chemli agent configuration

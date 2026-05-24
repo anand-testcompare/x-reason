@@ -29,6 +29,7 @@ describe("agentic workflow prompt contract", () => {
     const prompts = await solver(AGENTIC_WORKFLOW_SAMPLE_QUERY);
 
     expect(prompts.system).toContain("When the user asks for a launch plan or launch workflow");
+    expect(prompts.system).toContain("This applies to any launch request");
     expect(prompts.system).toContain("Run market research and compliance review in parallel");
     expect(prompts.system).toContain("Require human approval before execution");
   });
